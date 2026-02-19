@@ -176,3 +176,16 @@ class ActiveBeltGrade(Base):
     updated_at = Column(DateTime, default=datetime.utcnow)
 
     updated_by_user = relationship("User", foreign_keys=[updated_by])
+
+class Notification(Base):
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    triggered_by = Column(Integer, ForeignKey("users.id"), nullable=True)  # who caused this notification
+    message = Column(String, nullable=False)
+    is_read = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User", foreign_keys=[user_id])
+    triggered_by_user = relationship("User", foreign_keys=[triggered_by])
