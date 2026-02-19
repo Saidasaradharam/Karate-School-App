@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers.auth import router as auth_router
+from routers.branches import router as branches_router
 from fastapi.security import HTTPBearer
 
 
@@ -10,6 +11,7 @@ app = FastAPI(
 )
 
 app.include_router(auth_router)
+app.include_router(branches_router)
 
 app.add_middleware(
     CORSMiddleware,
