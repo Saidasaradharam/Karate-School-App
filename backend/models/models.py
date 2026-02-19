@@ -32,6 +32,7 @@ class User(Base):
     branch_id = Column(Integer, ForeignKey("branches.id"), nullable=True)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    profile_picture = Column(String, nullable=True)  # stores URL from R2
 
     branch = relationship("Branch", back_populates="users")
     student = relationship("Student", back_populates="user", uselist=False)
