@@ -1,0 +1,24 @@
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from routers.auth import router as auth_router
+from fastapi.security import HTTPBearer
+
+
+app = FastAPI(
+    title="Karate School Management API",
+    swagger_ui_parameters={"persistAuthorization": True}
+)
+
+app.include_router(auth_router)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],    # Vite dev server
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}
