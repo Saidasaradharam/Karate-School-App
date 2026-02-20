@@ -62,3 +62,11 @@ def get_my_branch(db: Session = Depends(get_db), current_user: User = Depends(re
 @router.get("/public")
 def get_public_branches(db: Session = Depends(get_db)):
     return db.query(Branch).filter(Branch.is_active == True).all()
+
+@router.get("/my-branch-admins")
+def get_my_branch_admins(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    admins = db.query(User).filter(
+        User.branch_id == current_user.branch_id,
+        User.role.in_([UserRole.admin, UserRole.super_admin])
+    ).all()
+    return [{"id": a.id, "email": a.email} for a in admins]
