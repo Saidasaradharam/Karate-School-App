@@ -58,3 +58,7 @@ def get_my_branch(db: Session = Depends(get_db), current_user: User = Depends(re
     if not branch:
         raise HTTPException(status_code=404, detail="Branch not found")
     return branch
+
+@router.get("/public")
+def get_public_branches(db: Session = Depends(get_db)):
+    return db.query(Branch).filter(Branch.is_active == True).all()
