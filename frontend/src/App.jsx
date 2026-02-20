@@ -3,6 +3,9 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import ProtectedRoute from './components/ProtectedRoute'
+import Fees from './pages/Fees'
+import Notifications from './pages/Notifications'
+import Photos from './pages/Photos'
 
 function App() {
   return (
@@ -15,6 +18,9 @@ function App() {
           <Dashboard />
         </ProtectedRoute>
       } />
+      <Route path="/fees" element={<ProtectedRoute><Fees /></ProtectedRoute>} />
+      <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+      <Route path="/photos" element={<ProtectedRoute><Photos /></ProtectedRoute>} />
     </Routes>
   )
 }
