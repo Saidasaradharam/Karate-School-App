@@ -137,3 +137,29 @@ def reject_offline_request(id: int, data: OfflineRequestAction, db: Session = De
     create_notification(db, student.user_id, f"Your cash payment request for {request.month}/{request.year} was rejected", triggered_by=current_user.id)
     db.commit()
     return {"message": "Payment rejected", "reason": data.reason}
+
+@router.get("/offline/my-requests")
+def get_my_requests(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    student = db.query(Student).filter(Student.user_id == current_user.id).first()
+    if not student:
+        return []
+    return db.query(OfflinePaymentRequest).filter(
+        OfflinePaymentRequest.student_id == student.id,
+        OfflinePaymentRequest.status == RequestStatus.pending
+    ).all()
+
+@router.patch("/offline/{id}/cancel")
+def cancel_request(id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    student = db.query(Student).filter(Student.user_id == current_user.id).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+    request = db.query(OfflinePaymentRequest).filter(
+        OfflinePaymentRequest.id == id,
+        OfflinePaymentRequest.student_id == student.id,
+        OfflinePaymentRequest.status == RequestStatus.pending
+    ).first()
+    if not request:
+        raise HTTPException(status_code=404, detail="Request not found or cannot be cancelled")
+    request.status = RequestStatus.rejected
+    db.commit()
+    return {"message": "Request cancelled"}
