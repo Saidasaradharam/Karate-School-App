@@ -25,7 +25,9 @@ function Login() {
         { role: res.data.role, branch_id: res.data.branch_id },
         res.data.access_token
       )
-      if (res.data.role === 'admin' || res.data.role === 'super_admin') {
+      if (res.data.role === 'super_admin') {
+        navigate('/superadmin/dashboard')
+      } else if (res.data.role === 'admin') {
         navigate('/admin/dashboard')
       } else {
         navigate('/dashboard')

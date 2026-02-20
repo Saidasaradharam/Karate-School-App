@@ -6,6 +6,7 @@ from auth.dependencies import get_current_user, require_admin
 from pydantic import BaseModel
 from typing import Optional
 from models.models import Notification
+from datetime import datetime
 
 
 router = APIRouter(prefix="/payments", tags=["Payments"])
@@ -70,6 +71,13 @@ def create_offline_request(data: OfflineRequestCreate, db: Session = Depends(get
     db.add(request)
     db.commit()
     db.refresh(request)
+
+    create_notification(
+    db,
+    user_id=data.admin_id,
+    message=f"New offline payment request from {student.full_name} for {data.month}/{data.year} — Rs.{data.amount}",
+    triggered_by=current_user.id
+)
     return request
 
 @router.get("/offline/pending")

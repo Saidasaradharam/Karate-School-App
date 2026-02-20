@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
-from models.models import Branch, BranchRequest, User, RequestStatus
+from models.models import Branch, BranchRequest, User, RequestStatus, Student, UserRole
 from auth.dependencies import get_current_user, require_admin, require_super_admin
 from pydantic import BaseModel
+from models.models import BranchSchedule
 
 router = APIRouter(prefix="/branches", tags=["Branches"])
 
@@ -13,6 +14,10 @@ class BranchRequestCreate(BaseModel):
 
 class BranchRequestAction(BaseModel):
     reason: str = None
+
+class ScheduleUpdate(BaseModel):
+    days: list[int]  # [0,1,2,3,4,5,6] — 0=Monday, 6=Sunday
+
 
 @router.post("/request")
 def request_branch(data: BranchRequestCreate, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
@@ -70,4 +75,57 @@ def get_my_branch_admins(db: Session = Depends(get_db), current_user: User = Dep
         User.role.in_([UserRole.admin, UserRole.super_admin])
     ).all()
     return [{"id": a.id, "email": a.email} for a in admins]
+
+@router.get("/overview")
+def get_branches_overview(db: Session = Depends(get_db), current_user: User = Depends(require_super_admin)):
+    branches = db.query(Branch).all()
+    result = []
+    for branch in branches:
+        admins = db.query(User).filter(
+            User.branch_id == branch.id,
+            User.role == UserRole.admin
+        ).all()
+        students = db.query(Student).join(User).filter(
+            User.branch_id == branch.id,
+            User.role == UserRole.student
+        ).all()
+        result.append({
+            "id": branch.id,
+            "name": branch.name,
+            "location": branch.location,
+            "is_active": branch.is_active,
+            "admin_count": len(admins),
+            "student_count": len(students),
+            "admins": [{"id": a.id, "email": a.email} for a in admins]
+        })
+    return result
+
+
+@router.get("/my-schedule")
+def get_my_schedule(db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
+    schedules = db.query(BranchSchedule).filter(
+        BranchSchedule.branch_id == current_user.branch_id
+    ).all()
+    return [s.day_of_week for s in schedules]
+
+@router.put("/my-schedule")
+def update_my_schedule(
+    data: ScheduleUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
+):
+    # Delete existing schedule
+    db.query(BranchSchedule).filter(
+        BranchSchedule.branch_id == current_user.branch_id
+    ).delete()
+    # Insert new schedule
+    for day in data.days:
+        if day < 0 or day > 6:
+            raise HTTPException(status_code=400, detail=f"Invalid day: {day}")
+        db.add(BranchSchedule(
+            branch_id=current_user.branch_id,
+            day_of_week=day
+        ))
+    db.commit()
+    return {"message": "Schedule updated", "days": data.days}
 

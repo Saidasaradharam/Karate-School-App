@@ -85,9 +85,13 @@ def update_my_profile(data: StudentUpdate, db: Session = Depends(get_db), curren
 @router.get("/")
 def get_students(skip: int = 0, limit: int = 20, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     if current_user.role == UserRole.super_admin:
-        return db.query(Student).join(User).filter(
+        students = db.query(Student, User.branch_id).join(User).filter(
             User.role == UserRole.student
         ).offset(skip).limit(limit).all()
+        return [
+            {**s.__dict__, "branch_id": branch_id}
+            for s, branch_id in students
+        ]
     return db.query(Student).join(User).filter(
         User.branch_id == current_user.branch_id,
         User.role == UserRole.student

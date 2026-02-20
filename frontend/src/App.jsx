@@ -10,6 +10,11 @@ import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminStudents from './pages/admin/AdminStudents'
 import AdminAttendance from './pages/admin/AdminAttendance'
 import StudentAttendance from './pages/StudentAttendance'
+import SuperAdminDashboard from './pages/superadmin/SuperAdminDashboard'
+import SuperAdminStudents from './pages/superadmin/SuperAdminStudents'
+import SuperAdminRoute from './components/SuperAdminRoute'
+import SuperAdminFees from './pages/superadmin/SuperAdminFees'
+import BranchSchedule from './pages/admin/BranchSchedule'
 
 function App() {
   return (
@@ -29,6 +34,17 @@ function App() {
       <Route path="/admin/students" element={<ProtectedRoute><AdminStudents /></ProtectedRoute>} />
       <Route path="/admin/attendance" element={<ProtectedRoute><AdminAttendance /></ProtectedRoute>} />
       <Route path="/attendance" element={<ProtectedRoute><StudentAttendance /></ProtectedRoute>} />
+      <Route path="/admin/schedule" element={<ProtectedRoute><BranchSchedule /></ProtectedRoute>} />
+      <Route path="/superadmin/dashboard" element={
+        <SuperAdminRoute><SuperAdminDashboard /></SuperAdminRoute>
+      } />
+      <Route path="/superadmin/students" element={
+        <SuperAdminRoute><SuperAdminStudents /></SuperAdminRoute>
+      } />
+      <Route path="/superadmin/fees" element={
+        <SuperAdminRoute><SuperAdminFees /></SuperAdminRoute>
+      } />
+      
     </Routes>
   )
 }

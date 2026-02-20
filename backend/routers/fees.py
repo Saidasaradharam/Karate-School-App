@@ -32,6 +32,7 @@ class FeeSummaryResponse(BaseModel):
     paid_count: int
     pending_count: int
     rejected_count: int = 0
+    total_collected: float = 0.0
 
     class Config:
         from_attributes = True
@@ -200,3 +201,33 @@ def get_student_fee_history(student_id: int, db: Session = Depends(get_db), curr
     if not student:
         raise HTTPException(status_code=404, detail="Student not found in your branch")
     return db.query(FeeRecord).filter(FeeRecord.student_id == student_id).order_by(FeeRecord.year.desc(), FeeRecord.month.desc()).all()
+
+@router.get("/summary", response_model=list[FeeSummaryResponse])
+def get_financial_summary(db: Session = Depends(get_db), current_user: User = Depends(require_super_admin)):
+    from models.models import Branch
+    branches = db.query(Branch).filter(Branch.is_active == True).all()
+    result = []
+    for branch in branches:
+        students = db.query(Student).join(User).filter(
+            User.branch_id == branch.id,
+            User.role == UserRole.student
+        ).all()
+        student_ids = [s.id for s in students]
+        paid_records = db.query(FeeRecord).filter(
+            FeeRecord.student_id.in_(student_ids),
+            FeeRecord.status.in_([FeeStatus.paid_online, FeeStatus.paid_offline])
+        ).all()
+        pending = db.query(FeeRecord).filter(
+            FeeRecord.student_id.in_(student_ids),
+            FeeRecord.status == FeeStatus.pending
+        ).count()
+        total_collected = sum(r.amount for r in paid_records if r.amount)
+        result.append({
+            "branch_id": branch.id,
+            "branch_name": branch.name,
+            "total_students": len(students),
+            "paid_count": len(paid_records),
+            "pending_count": pending,
+            "total_collected": total_collected
+        })
+    return result

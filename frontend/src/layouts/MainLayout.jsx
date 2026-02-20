@@ -15,6 +15,7 @@ function MainLayout({ children }) {
 
   const unreadCount = notifications?.filter(n => !n.is_read).length || 0
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin'
+  const isSuperAdmin = user?.role === 'super_admin'
 
   function handleLogout() {
     logout()
@@ -43,13 +44,22 @@ function MainLayout({ children }) {
 
         {/* Nav */}
         <nav className="flex-1 p-4 space-y-2">
-          {isAdmin ? (
+          {isSuperAdmin ? (
+            <>
+              <Link to="/superadmin/dashboard" className="block px-4 py-2 rounded hover:bg-gray-700">Dashboard</Link>
+              <Link to="/superadmin/students" className="block px-4 py-2 rounded hover:bg-gray-700">Students</Link>
+              <Link to="/superadmin/fees" className="block px-4 py-2 rounded hover:bg-gray-700">Fee Entry</Link>
+              <Link to="/admin/attendance" className="block px-4 py-2 rounded hover:bg-gray-700">Attendance</Link>
+              <Link to="/admin/schedule" className="block px-4 py-2 rounded hover:bg-gray-700">Schedule</Link>
+              <Link to="/photos" className="block px-4 py-2 rounded hover:bg-gray-700">Photos</Link>
+            </>
+          ) : isAdmin ? (
             <>
               <Link to="/admin/dashboard" className="block px-4 py-2 rounded hover:bg-gray-700">Dashboard</Link>
               <Link to="/admin/students" className="block px-4 py-2 rounded hover:bg-gray-700">Students</Link>
               <Link to="/admin/attendance" className="block px-4 py-2 rounded hover:bg-gray-700">Attendance</Link>
+              <Link to="/admin/schedule" className="block px-4 py-2 rounded hover:bg-gray-700">Schedule</Link>
               <Link to="/photos" className="block px-4 py-2 rounded hover:bg-gray-700">Photos</Link>
-            
             </>
           ) : (
             <>
