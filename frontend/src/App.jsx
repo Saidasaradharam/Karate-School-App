@@ -15,6 +15,7 @@ import SuperAdminStudents from './pages/superadmin/SuperAdminStudents'
 import SuperAdminRoute from './components/SuperAdminRoute'
 import SuperAdminFees from './pages/superadmin/SuperAdminFees'
 import BranchSchedule from './pages/admin/BranchSchedule'
+import StudentProfile from './pages/StudentProfile'
 
 function App() {
   return (
@@ -30,7 +31,8 @@ function App() {
       <Route path="/fees" element={<ProtectedRoute><Fees /></ProtectedRoute>} />
       <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
       <Route path="/photos" element={<ProtectedRoute><Photos /></ProtectedRoute>} />
-      <Route path="/admin/dashboard" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+      <Route path="/profile" element={<ProtectedRoute><StudentProfile /></ProtectedRoute>} />
+<Route path="/admin/dashboard" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
       <Route path="/admin/students" element={<ProtectedRoute><AdminStudents /></ProtectedRoute>} />
       <Route path="/admin/attendance" element={<ProtectedRoute><AdminAttendance /></ProtectedRoute>} />
       <Route path="/attendance" element={<ProtectedRoute><StudentAttendance /></ProtectedRoute>} />

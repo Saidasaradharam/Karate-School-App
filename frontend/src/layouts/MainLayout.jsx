@@ -27,19 +27,35 @@ function MainLayout({ children }) {
       <aside className="w-64 bg-gray-900 text-white flex flex-col">
 
         {/* Header */}
-        <div className="p-6 border-b border-gray-700 flex justify-between items-center">
-          <div>
-            <h1 className="text-xl font-bold">Karate School</h1>
-            <p className="text-sm text-gray-400 mt-1">{user?.role}</p>
+        <div className="p-5 border-b border-gray-700">
+          <div className="flex items-center gap-3 mb-4">
+            {/* Logo */}
+            <img
+              src="/src/assets/logo.svg"
+              alt="Logo"
+              className="w-9 h-9 rounded-lg object-cover"
+              onError={e => e.target.style.display = 'none'}  // hide if logo missing
+            />
+            <h1 className="text-lg font-bold">Karate School</h1>
           </div>
-          <Link to="/notifications" className="relative">
-            <span className="text-2xl">🔔</span>
-            {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                {unreadCount}
-              </span>
-            )}
-          </Link>
+
+          {/* User info + bell */}
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold text-white">
+                {user?.full_name || 'User'}
+              </p>
+              <p className="text-xs text-gray-400 capitalize mt-0.5">{user?.role?.replace('_', ' ')}</p>
+            </div>
+            <Link to="/notifications" className="relative">
+              <span className="text-xl">🔔</span>
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                  {unreadCount}
+                </span>
+              )}
+            </Link>
+          </div>
         </div>
 
         {/* Nav */}
@@ -67,6 +83,7 @@ function MainLayout({ children }) {
               <Link to="/fees" className="block px-4 py-2 rounded hover:bg-gray-700">Fees</Link>
               <Link to="/attendance" className="block px-4 py-2 rounded hover:bg-gray-700">Attendance</Link>
               <Link to="/photos" className="block px-4 py-2 rounded hover:bg-gray-700">Photos</Link>
+              <Link to="/profile" className="block px-4 py-2 rounded hover:bg-gray-700">My Profile</Link>
             </>
           )}
         </nav>
