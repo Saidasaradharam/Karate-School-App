@@ -95,6 +95,8 @@ class FeeRecord(Base):
     amount = Column(Float, nullable=True)
     receipt_url = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    paid_at = Column(DateTime, nullable=True)  # null until actually paid
+
 
     student = relationship("Student", back_populates="fee_records")
 
@@ -108,6 +110,7 @@ class OfflinePaymentRequest(Base):
     year = Column(Integer, nullable=False)
     amount = Column(Float, nullable=False)
     status = Column(Enum(RequestStatus), default=RequestStatus.pending)
+    paid_date = Column(String, nullable=True)  # student-reported payment date
     created_at = Column(DateTime, default=datetime.utcnow)
 
     student = relationship("Student", back_populates="offline_requests")

@@ -14,6 +14,8 @@ class ManualEntryCreate(BaseModel):
     month: int
     year: int
     amount: float
+    paid_date: Optional[str] = None  # "YYYY-MM-DD" format, defaults to today
+
 
 class FeeStatusResponse(BaseModel):
     student_id: int
@@ -49,51 +51,67 @@ def get_my_fee_status(db: Session = Depends(get_db), current_user: User = Depend
     return records
 
 @router.get("/branch-overview")
-def get_branch_overview(db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
+def get_branch_overview(
+    month: int = None,
+    year: int = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
+):
     now = datetime.utcnow()
+    month = month or now.month
+    year = year or now.year
     students = db.query(Student).join(User).filter(
         User.branch_id == current_user.branch_id,
-        User.role == UserRole.student  # only students
+        User.role == UserRole.student
     ).all()
     result = []
     for student in students:
         record = db.query(FeeRecord).filter(
             FeeRecord.student_id == student.id,
-            FeeRecord.month == now.month,
-            FeeRecord.year == now.year
+            FeeRecord.month == month,
+            FeeRecord.year == year
         ).first()
         result.append({
             "student_id": student.id,
             "full_name": student.full_name,
-            "month": now.month,
-            "year": now.year,
-            "status": record.status if record else "no_record",
-            "amount": record.amount if record else None
+            "month": month,
+            "year": year,
+            "status": record.status.value if record else "no_record",
+            "amount": record.amount if record else None,
+            "payment_type": record.payment_type if record else None,
+            "paid_at": record.paid_at.isoformat() if record and record.paid_at else None  # add this
         })
     return result
 
 @router.get("/branch-summary", response_model=FeeSummaryResponse)
 def get_branch_summary(db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     from models.models import Branch
+    now = datetime.utcnow()
     branch = db.query(Branch).filter(Branch.id == current_user.branch_id).first()
     if not branch:
         raise HTTPException(status_code=404, detail="Branch not found")
     students = db.query(Student).join(User).filter(
         User.branch_id == current_user.branch_id,
-        User.role == UserRole.student  # only students
+        User.role == UserRole.student
     ).all()
     student_ids = [s.id for s in students]
     paid = db.query(FeeRecord).filter(
         FeeRecord.student_id.in_(student_ids),
-        FeeRecord.status.in_([FeeStatus.paid_online, FeeStatus.paid_offline])
+        FeeRecord.status.in_([FeeStatus.paid_online, FeeStatus.paid_offline]),
+        FeeRecord.month == now.month,   # add this
+        FeeRecord.year == now.year      # add this
     ).count()
     pending = db.query(FeeRecord).filter(
         FeeRecord.student_id.in_(student_ids),
-        FeeRecord.status == FeeStatus.pending
+        FeeRecord.status == FeeStatus.pending,
+        FeeRecord.month == now.month,
+        FeeRecord.year == now.year
     ).count()
     rejected = db.query(FeeRecord).filter(
         FeeRecord.student_id.in_(student_ids),
-        FeeRecord.status == FeeStatus.rejected
+        FeeRecord.status == FeeStatus.rejected,
+        FeeRecord.month == now.month,
+        FeeRecord.year == now.year
     ).count()
     return {
         "branch_id": branch.id,
@@ -135,6 +153,7 @@ def get_financial_summary(db: Session = Depends(get_db), current_user: User = De
 @router.post("/manual-entry")
 def add_manual_entry(data: ManualEntryCreate, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     # Verify student belongs to admin's branch
+    paid_at = datetime.strptime(data.paid_date, "%Y-%m-%d") if data.paid_date else datetime.utcnow()
     student = db.query(Student).join(User).filter(
         Student.id == data.student_id,
         User.branch_id == current_user.branch_id
@@ -153,6 +172,7 @@ def add_manual_entry(data: ManualEntryCreate, db: Session = Depends(get_db), cur
         existing.status = FeeStatus.paid_offline
         existing.amount = data.amount
         existing.payment_type = "cash"
+        existing.paid_at = paid_at  # add this
         create_notification(db, student.user_id, f"Admin logged a cash payment of {data.amount} for {data.month}/{data.year}", triggered_by=current_user.id)
         db.commit()
         return existing
@@ -162,7 +182,8 @@ def add_manual_entry(data: ManualEntryCreate, db: Session = Depends(get_db), cur
         year=data.year,
         status=FeeStatus.paid_offline,
         payment_type="cash",
-        amount=data.amount
+        amount=data.amount,
+        paid_at=paid_at  # add this
     )
     db.add(record)
     create_notification(db, student.user_id, f"Admin logged a cash payment of {data.amount} for {data.month}/{data.year}", triggered_by=current_user.id)
