@@ -6,6 +6,10 @@ import ProtectedRoute from './components/ProtectedRoute'
 import Fees from './pages/Fees'
 import Notifications from './pages/Notifications'
 import Photos from './pages/Photos'
+import AdminDashboard from './pages/admin/AdminDashboard'
+import AdminStudents from './pages/admin/AdminStudents'
+import AdminAttendance from './pages/admin/AdminAttendance'
+import StudentAttendance from './pages/StudentAttendance'
 
 function App() {
   return (
@@ -21,6 +25,10 @@ function App() {
       <Route path="/fees" element={<ProtectedRoute><Fees /></ProtectedRoute>} />
       <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
       <Route path="/photos" element={<ProtectedRoute><Photos /></ProtectedRoute>} />
+      <Route path="/admin/dashboard" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+      <Route path="/admin/students" element={<ProtectedRoute><AdminStudents /></ProtectedRoute>} />
+      <Route path="/admin/attendance" element={<ProtectedRoute><AdminAttendance /></ProtectedRoute>} />
+      <Route path="/attendance" element={<ProtectedRoute><StudentAttendance /></ProtectedRoute>} />
     </Routes>
   )
 }

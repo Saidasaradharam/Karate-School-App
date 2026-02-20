@@ -84,6 +84,16 @@ function Fees() {
               <input type="number" value={formData.amount} onChange={e => setFormData({...formData, amount: e.target.value})} required className="w-full border rounded px-3 py-2" />
             </div>
             <div>
+              <label className="block text-sm font-medium mb-1">Payment Date</label>
+              <input
+                type="date"
+                value={formData.paid_date}
+                max={new Date().toISOString().split('T')[0]}
+                onChange={e => setFormData({...formData, paid_date: e.target.value})}
+                className="w-full border rounded px-3 py-2"
+              />
+            </div>
+            <div>
               <label className="block text-sm font-medium mb-1">Admin</label>
               <select value={formData.admin_id} onChange={e => setFormData({...formData, admin_id: e.target.value})} required className="w-full border rounded px-3 py-2">
                 <option value="">Select admin</option>
@@ -126,6 +136,7 @@ function Fees() {
               <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Year</th>
               <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Amount</th>
               <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Payment Type</th>
+              <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Paid On</th>
               <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Status</th>
             </tr>
           </thead>
@@ -141,6 +152,7 @@ function Fees() {
                   <td className="px-6 py-4">{record.year}</td>
                   <td className="px-6 py-4">{record.amount ? `Rs.${record.amount}` : '—'}</td>
                   <td className="px-6 py-4 capitalize">{record.payment_type || '—'}</td>
+                  <td className="px-6 py-4">{record.paid_at ? new Date(record.paid_at).toLocaleDateString() : '—'}</td>
                   <td className="px-6 py-4"><FeeStatusBadge status={record.status} /></td>
                 </tr>
               ))

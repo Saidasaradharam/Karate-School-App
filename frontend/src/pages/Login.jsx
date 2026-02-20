@@ -25,7 +25,11 @@ function Login() {
         { role: res.data.role, branch_id: res.data.branch_id },
         res.data.access_token
       )
-      navigate('/dashboard')
+      if (res.data.role === 'admin' || res.data.role === 'super_admin') {
+        navigate('/admin/dashboard')
+      } else {
+        navigate('/dashboard')
+      }
     } catch (err) {
       setError(err.response?.data?.detail || 'Login failed')
     } finally {

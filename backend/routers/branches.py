@@ -70,3 +70,4 @@ def get_my_branch_admins(db: Session = Depends(get_db), current_user: User = Dep
         User.role.in_([UserRole.admin, UserRole.super_admin])
     ).all()
     return [{"id": a.id, "email": a.email} for a in admins]
+

@@ -12,6 +12,7 @@ from routers.payments import router as payments_router
 from routers.notifications import router as notifications_router
 from routers.photos import router as photos_router
 from routers.belt_grades import router as belt_grades_router
+from routers.attendance import router as attendance_router
 
 scheduler = BackgroundScheduler()
 
@@ -37,6 +38,7 @@ app.include_router(payments_router)
 app.include_router(notifications_router)
 app.include_router(photos_router)
 app.include_router(belt_grades_router)
+app.include_router(attendance_router)
 
 app.add_middleware(
     CORSMiddleware,
