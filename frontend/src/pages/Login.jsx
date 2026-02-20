@@ -21,8 +21,19 @@ function Login() {
     setError('')
     try {
       const res = await api.post('/auth/login', formData)
+      const token = res.data.access_token
+
+      let fullName = null
+      try {
+        const profile = await api.get('/students/me', {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        fullName = profile.data?.full_name
+      } catch {
+        // No student profile — fine for admins who haven't set one up yet
+      }
       login(
-        { role: res.data.role, branch_id: res.data.branch_id },
+        { role: res.data.role, branch_id: res.data.branch_id, full_name: fullName },
         res.data.access_token
       )
       if (res.data.role === 'super_admin') {
