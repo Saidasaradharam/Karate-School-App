@@ -51,7 +51,10 @@ def get_my_fee_status(db: Session = Depends(get_db), current_user: User = Depend
 @router.get("/branch-overview")
 def get_branch_overview(db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     now = datetime.utcnow()
-    students = db.query(Student).join(User).filter(User.branch_id == current_user.branch_id).all()
+    students = db.query(Student).join(User).filter(
+        User.branch_id == current_user.branch_id,
+        User.role == UserRole.student  # only students
+    ).all()
     result = []
     for student in students:
         record = db.query(FeeRecord).filter(
@@ -75,7 +78,10 @@ def get_branch_summary(db: Session = Depends(get_db), current_user: User = Depen
     branch = db.query(Branch).filter(Branch.id == current_user.branch_id).first()
     if not branch:
         raise HTTPException(status_code=404, detail="Branch not found")
-    students = db.query(Student).join(User).filter(User.branch_id == current_user.branch_id).all()
+    students = db.query(Student).join(User).filter(
+        User.branch_id == current_user.branch_id,
+        User.role == UserRole.student  # only students
+    ).all()
     student_ids = [s.id for s in students]
     paid = db.query(FeeRecord).filter(
         FeeRecord.student_id.in_(student_ids),
@@ -104,7 +110,10 @@ def get_financial_summary(db: Session = Depends(get_db), current_user: User = De
     branches = db.query(Branch).filter(Branch.is_active == True).all()
     result = []
     for branch in branches:
-        students = db.query(Student).join(User).filter(User.branch_id == branch.id).all()
+        students = db.query(Student).join(User).filter(
+            User.branch_id == branch.id,
+            User.role == UserRole.student  # only students
+        ).all()
         student_ids = [s.id for s in students]
         paid = db.query(FeeRecord).filter(
             FeeRecord.student_id.in_(student_ids),
