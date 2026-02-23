@@ -111,6 +111,7 @@ class OfflinePaymentRequest(Base):
     amount = Column(Float, nullable=False)
     status = Column(Enum(RequestStatus), default=RequestStatus.pending)
     paid_date = Column(String, nullable=True)  # student-reported payment date
+    payment_type = Column(String, default="cash")
     created_at = Column(DateTime, default=datetime.utcnow)
 
     student = relationship("Student", back_populates="offline_requests")

@@ -7,12 +7,12 @@ const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov
 function ManualFeeModal({ students, onClose, showToast }) {
   const queryClient = useQueryClient()
   const [formData, setFormData] = useState({
-    student_id: '', 
+    student_id: '',
     month: new Date().getMonth() + 1,
-    year: new Date().getFullYear(), 
+    year: new Date().getFullYear(),
     amount: '',
-    paid_date: new Date().toISOString().split('T')[0]
-
+    paid_date: new Date().toISOString().split('T')[0],
+    payment_type: 'cash'
   })
 
   const submit = useMutation({
@@ -33,9 +33,8 @@ function ManualFeeModal({ students, onClose, showToast }) {
       month: parseInt(formData.month),
       year: parseInt(formData.year),
       amount: parseFloat(formData.amount),
-      paid_date: formData.paid_date
-
-      
+      paid_date: formData.paid_date,
+      payment_type: formData.payment_type
     })
   }
 
@@ -72,10 +71,35 @@ function ManualFeeModal({ students, onClose, showToast }) {
             <input
               type="date"
               value={formData.paid_date}
-              max={new Date().toISOString().split('T')[0]}  // can't select future date
+              max={new Date().toISOString().split('T')[0]}
               onChange={e => setFormData({...formData, paid_date: e.target.value})}
               className="w-full border rounded px-3 py-2"
             />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Payment Type</label>
+            <div className="flex gap-3">
+              {['cash', 'upi'].map(type => (
+                <label
+                  key={type}
+                  className={`flex-1 flex items-center justify-center gap-2 p-2.5 rounded-lg border cursor-pointer transition-all ${
+                    formData.payment_type === type
+                      ? 'border-gray-900 bg-gray-50 font-semibold'
+                      : 'border-gray-200 hover:border-gray-400'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="payment_type"
+                    value={type}
+                    checked={formData.payment_type === type}
+                    onChange={e => setFormData({...formData, payment_type: e.target.value})}
+                    className="hidden"
+                  />
+                  <span>{type === 'cash' ? '💵 Cash' : '📱 UPI'}</span>
+                </label>
+              ))}
+            </div>
           </div>
           <div className="flex gap-3 pt-2">
             <button type="submit" disabled={submit.isPending} className="flex-1 bg-gray-900 text-white py-2 rounded hover:bg-gray-700 disabled:opacity-50">
@@ -90,4 +114,5 @@ function ManualFeeModal({ students, onClose, showToast }) {
     </div>
   )
 }
+
 export default ManualFeeModal

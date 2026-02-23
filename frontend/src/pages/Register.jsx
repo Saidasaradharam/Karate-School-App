@@ -70,19 +70,27 @@ useEffect(() => {
       <h2 className="text-2xl font-bold mb-6 text-center">Student Registration</h2>
       {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
       <form onSubmit={handleSubmit} className="space-y-4">
-
+        <p className="text-xs text-gray-500 mb-4">
+          Fields marked with <span className="text-red-500 font-bold">*</span> are required
+        </p>
         <div>
-          <label className="block text-sm font-medium mb-1">Email</label>
+          <label className="block text-sm font-medium mb-1">
+            Email <span className="text-red-500">*</span>
+          </label>
           <input type="email" name="email" value={formData.email} onChange={handleChange} required className="w-full border rounded px-3 py-2" />
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Password</label>
+          <label className="block text-sm font-medium mb-1">
+            Password <span className="text-red-500">*</span>
+          </label>
           <input type="password" name="password" value={formData.password} onChange={handleChange} required className="w-full border rounded px-3 py-2" />
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Branch</label>
+          <label className="block text-sm font-medium mb-1">
+            Branch <span className="text-red-500">*</span>
+          </label>
           <select name="branch_id" value={formData.branch_id} onChange={handleChange} required className="w-full border rounded px-3 py-2">
             <option value="">Select a branch</option>
             {branches.map(b => (
@@ -92,32 +100,44 @@ useEffect(() => {
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Full Name</label>
+          <label className="block text-sm font-medium mb-1">
+            Full Name <span className="text-red-500">*</span>
+          </label>
           <input type="text" name="full_name" value={formData.full_name} onChange={handleChange} required className="w-full border rounded px-3 py-2" />
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Date of Birth</label>
+          <label className="block text-sm font-medium mb-1">
+            Date of Birth <span className="text-red-500">*</span>
+          </label>
           <input type="date" name="dob" value={formData.dob} onChange={handleChange} required className="w-full border rounded px-3 py-2" />
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Parent / Guardian Name</label>
+          <label className="block text-sm font-medium mb-1">
+            Parent / Guardian Name <span className="text-red-500">*</span>
+          </label>
           <input type="text" name="parent_name" value={formData.parent_name} onChange={handleChange} required className="w-full border rounded px-3 py-2" />
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Address</label>
+          <label className="block text-sm font-medium mb-1">
+            Address <span className="text-red-500">*</span>
+          </label>
           <input type="text" name="address" value={formData.address} onChange={handleChange} required className="w-full border rounded px-3 py-2" />
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Contact Number</label>
+          <label className="block text-sm font-medium mb-1">
+            Contact Number <span className="text-red-500">*</span>
+          </label>
           <input type="text" name="contact" value={formData.contact} onChange={handleChange} required className="w-full border rounded px-3 py-2" />
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Belt Grade</label>
+          <label className="block text-sm font-medium mb-1">
+            Belt Grade <span className="text-red-500">*</span>
+          </label>
           <select name="belt_grade" value={formData.belt_grade} onChange={handleChange} className="w-full border rounded px-3 py-2">
             {beltGrades.map(g => (
                 <option key={g} value={g}>{g}</option>
@@ -126,12 +146,16 @@ useEffect(() => {
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Last Graduation Date</label>
+          <label className="block text-sm font-medium mb-1">
+            Last Graduation Date <span className="text-gray-400 font-normal text-xs">(optional)</span>
+          </label>
           <input type="date" name="last_graduation_date" value={formData.last_graduation_date} onChange={handleChange} className="w-full border rounded px-3 py-2" />
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Emergency Contact</label>
+          <label className="block text-sm font-medium mb-1">
+            Emergency Contact <span className="text-red-500">*</span>
+          </label>
           <input type="text" name="emergency_contact" value={formData.emergency_contact} onChange={handleChange} required className="w-full border rounded px-3 py-2" />
         </div>
 

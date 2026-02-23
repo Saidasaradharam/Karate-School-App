@@ -17,6 +17,7 @@ class OfflineRequestCreate(BaseModel):
     amount: float
     admin_id: int
     paid_date: Optional[str] = None
+    payment_type: str = "cash"  # add this
 
 
 class OfflineRequestAction(BaseModel):
@@ -66,7 +67,9 @@ def create_offline_request(data: OfflineRequestCreate, db: Session = Depends(get
         month=data.month,
         year=data.year,
         amount=data.amount,
-        status=RequestStatus.pending
+        status=RequestStatus.pending,
+        payment_type=data.payment_type  
+
     )
     db.add(request)
     db.commit()
@@ -109,7 +112,7 @@ def approve_offline_request(id: int, db: Session = Depends(get_db), current_user
     if fee:
         fee.status = FeeStatus.paid_offline
         fee.amount = request.amount
-        fee.payment_type = "cash"
+        fee.payment_type = request.payment_type  # was "cash"
         fee.paid_at = datetime.strptime(request.paid_date, "%Y-%m-%d") if request.paid_date else datetime.utcnow()
     else:
         fee = FeeRecord(
@@ -117,12 +120,12 @@ def approve_offline_request(id: int, db: Session = Depends(get_db), current_user
             month=request.month,
             year=request.year,
             status=FeeStatus.paid_offline,
-            payment_type="cash",
+            payment_type=request.payment_type,  # was "cash"
             amount=request.amount,
             paid_at=datetime.strptime(request.paid_date, "%Y-%m-%d") if request.paid_date else datetime.utcnow()
         )
         db.add(fee)
-    create_notification(db, student.user_id, f"Your cash payment of {request.amount} for {request.month}/{request.year} has been approved", triggered_by=current_user.id)
+    create_notification(db, student.user_id, f"Your {request.payment_type} payment of {request.amount} for {request.month}/{request.year} has been approved", triggered_by=current_user.id)
     db.commit()
     return {"message": "Payment approved", "request_id": id}
 

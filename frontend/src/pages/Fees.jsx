@@ -9,7 +9,14 @@ const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov
 function Fees() {
   const queryClient = useQueryClient()
   const [showForm, setShowForm] = useState(false)
-  const [formData, setFormData] = useState({ month: '', year: new Date().getFullYear(), amount: '', admin_id: '' })
+  const [formData, setFormData] = useState({
+    month: '',
+    year: new Date().getFullYear(),
+    amount: '',
+    admin_id: '',
+    paid_date: new Date().toISOString().split('T')[0],
+    payment_type: 'cash'
+  })
   const [error, setError] = useState('')
 
   const { data: feeRecords, isLoading } = useQuery({
@@ -49,7 +56,9 @@ function Fees() {
       month: parseInt(formData.month),
       year: parseInt(formData.year),
       amount: parseFloat(formData.amount),
-      admin_id: parseInt(formData.admin_id)
+      admin_id: parseInt(formData.admin_id),
+      paid_date: formData.paid_date,
+      payment_type: formData.payment_type
     })
   }
 
@@ -92,6 +101,31 @@ function Fees() {
                 onChange={e => setFormData({...formData, paid_date: e.target.value})}
                 className="w-full border rounded px-3 py-2"
               />
+            </div>
+            <div className="col-span-2">
+              <label className="block text-sm font-medium mb-1">Payment Type</label>
+              <div className="flex gap-3">
+                {['cash', 'upi'].map(type => (
+                  <label
+                    key={type}
+                    className={`flex-1 flex items-center justify-center gap-2 p-2.5 rounded-lg border cursor-pointer transition-all ${
+                      formData.payment_type === type
+                        ? 'border-gray-900 bg-gray-50 font-semibold'
+                        : 'border-gray-200 hover:border-gray-400'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="payment_type"
+                      value={type}
+                      checked={formData.payment_type === type}
+                      onChange={e => setFormData({...formData, payment_type: e.target.value})}
+                      className="hidden"
+                    />
+                    <span>{type === 'cash' ? '💵 Cash' : '📱 UPI'}</span>
+                  </label>
+                ))}
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Admin</label>
@@ -142,9 +176,9 @@ function Fees() {
           </thead>
           <tbody>
             {isLoading ? (
-              <tr><td colSpan="5" className="text-center py-8 text-gray-500">Loading...</td></tr>
+              <tr><td colSpan="6" className="text-center py-8 text-gray-500">Loading...</td></tr>
             ) : feeRecords?.length === 0 ? (
-              <tr><td colSpan="5" className="text-center py-8 text-gray-500">No fee records yet</td></tr>
+              <tr><td colSpan="6" className="text-center py-8 text-gray-500">No fee records yet</td></tr>
             ) : (
               feeRecords?.map(record => (
                 <tr key={record.id} className="border-b hover:bg-gray-50">

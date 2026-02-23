@@ -15,6 +15,7 @@ class ManualEntryCreate(BaseModel):
     year: int
     amount: float
     paid_date: Optional[str] = None  # "YYYY-MM-DD" format, defaults to today
+    payment_type: str = "cash"  # "cash" or "upi"
 
 
 class FeeStatusResponse(BaseModel):
@@ -172,7 +173,7 @@ def add_manual_entry(data: ManualEntryCreate, db: Session = Depends(get_db), cur
             raise HTTPException(status_code=409, detail="Fee already paid for this month")
         existing.status = FeeStatus.paid_offline
         existing.amount = data.amount
-        existing.payment_type = "cash"
+        existing.payment_type = data.payment_type
         existing.paid_at = paid_at  # add this
         create_notification(db, student.user_id, f"Admin logged a cash payment of {data.amount} for {data.month}/{data.year}", triggered_by=current_user.id)
         db.commit()
@@ -182,7 +183,7 @@ def add_manual_entry(data: ManualEntryCreate, db: Session = Depends(get_db), cur
         month=data.month,
         year=data.year,
         status=FeeStatus.paid_offline,
-        payment_type="cash",
+        payment_type=data.payment_type,
         amount=data.amount,
         paid_at=paid_at  # add this
     )
