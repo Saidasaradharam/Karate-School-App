@@ -7,7 +7,9 @@ from pydantic import BaseModel
 from typing import Optional
 from models.models import Notification
 from datetime import datetime
-
+import hashlib
+import hmac
+import uuid
 
 router = APIRouter(prefix="/payments", tags=["Payments"])
 
@@ -33,6 +35,94 @@ def create_notification(db: Session, user_id: int, message: str, triggered_by: i
     notification = Notification(user_id=user_id, message=message, triggered_by=triggered_by)
     db.add(notification)
     db.commit()
+    
+class OnlinePaymentCreate(BaseModel):
+    month: int
+    year: int
+    amount: float
+
+class OnlinePaymentVerify(BaseModel):
+    order_id: str
+    payment_id: str
+    month: int
+    year: int
+    amount: float
+
+@router.post("/online/create-order")
+def create_order(
+    data: OnlinePaymentCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    student = db.query(Student).filter(Student.user_id == current_user.id).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student profile not found")
+
+    # Check if already paid
+    existing = db.query(FeeRecord).filter(
+        FeeRecord.student_id == student.id,
+        FeeRecord.month == data.month,
+        FeeRecord.year == data.year
+    ).first()
+    if existing and existing.status in [FeeStatus.paid_online, FeeStatus.paid_offline]:
+        raise HTTPException(status_code=409, detail="Fee already paid for this month")
+
+    # Simulate order creation (replace with real Razorpay call later)
+    order_id = f"order_{uuid.uuid4().hex[:16]}"
+    return {
+        "order_id": order_id,
+        "amount": data.amount,
+        "currency": "INR",
+        "month": data.month,
+        "year": data.year
+    }
+
+@router.post("/online/verify")
+def verify_payment(
+    data: OnlinePaymentVerify,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    student = db.query(Student).filter(Student.user_id == current_user.id).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student profile not found")
+
+    # Simulate verification (replace with HMAC signature check later)
+    if not data.payment_id.startswith("pay_"):
+        raise HTTPException(status_code=400, detail="Invalid payment")
+
+    # Update or create fee record
+    fee = db.query(FeeRecord).filter(
+        FeeRecord.student_id == student.id,
+        FeeRecord.month == data.month,
+        FeeRecord.year == data.year
+    ).first()
+    if fee:
+        fee.status = FeeStatus.paid_online
+        fee.amount = data.amount
+        fee.payment_type = "online"
+        fee.paid_at = datetime.utcnow()
+    else:
+        fee = FeeRecord(
+            student_id=student.id,
+            month=data.month,
+            year=data.year,
+            status=FeeStatus.paid_online,
+            payment_type="online",
+            amount=data.amount,
+            paid_at=datetime.utcnow()
+        )
+        db.add(fee)
+
+    notify_user(
+        db,
+        user_id=current_user.id,
+        message=f"Online payment of Rs.{data.amount} for {data.month}/{data.year} successful",
+        push_title="Payment Successful",
+        push_url="/fees"
+    )
+    db.commit()
+    return {"message": "Payment verified", "status": "paid_online"}
 
 @router.post("/offline/request")
 def create_offline_request(data: OfflineRequestCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):

@@ -3,12 +3,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import MainLayout from '../layouts/MainLayout'
 import FeeStatusBadge from '../components/FeeStatusBadge'
 import api from '../api/axios'
+import PaymentModal from '../components/PaymentModal'
+
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-
 function Fees() {
   const queryClient = useQueryClient()
   const [showForm, setShowForm] = useState(false)
+  const [paymentModal, setPaymentModal] = useState(null)
   const [formData, setFormData] = useState({
     month: '',
     year: new Date().getFullYear(),
@@ -172,13 +174,15 @@ function Fees() {
               <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Payment Type</th>
               <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Paid On</th>
               <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Status</th>
+              <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Action</th>
+
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
-              <tr><td colSpan="6" className="text-center py-8 text-gray-500">Loading...</td></tr>
+              <tr><td colSpan="7" className="text-center py-8 text-gray-500">Loading...</td></tr>
             ) : feeRecords?.length === 0 ? (
-              <tr><td colSpan="6" className="text-center py-8 text-gray-500">No fee records yet</td></tr>
+              <tr><td colSpan="7" className="text-center py-8 text-gray-500">No fee records yet</td></tr>
             ) : (
               feeRecords?.map(record => (
                 <tr key={record.id} className="border-b hover:bg-gray-50">
@@ -188,12 +192,40 @@ function Fees() {
                   <td className="px-6 py-4 capitalize">{record.payment_type || '—'}</td>
                   <td className="px-6 py-4">{record.paid_at ? new Date(record.paid_at).toLocaleDateString() : '—'}</td>
                   <td className="px-6 py-4"><FeeStatusBadge status={record.status} /></td>
+                  <td className="px-6 py-4">
+                    {record.status === 'pending' || record.status === 'no_record' ? (
+                      <button
+                        onClick={() => setPaymentModal({
+                          month: record.month,
+                          year: record.year,
+                          amount: record.amount || 1500  // default amount if not set
+                        })}
+                        className="bg-gray-900 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-gray-700"
+                      >
+                        Pay Now
+                      </button>
+                    ) : (
+                      <span className="text-gray-300 text-xs">—</span>
+                    )}
+                  </td>
                 </tr>
               ))
             )}
           </tbody>
         </table>
       </div>
+
+      {paymentModal && (
+        <PaymentModal
+          month={paymentModal.month}
+          year={paymentModal.year}
+          amount={paymentModal.amount}
+          onSuccess={() => {
+            queryClient.invalidateQueries(['my-fees'])
+          }}
+          onClose={() => setPaymentModal(null)}
+        />
+      )}
     </MainLayout>
   )
 }
