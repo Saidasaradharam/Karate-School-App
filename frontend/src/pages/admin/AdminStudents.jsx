@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import MainLayout from '../../layouts/MainLayout'
 import StudentProfileModal from '../../components/StudentProfileModal'
 import api from '../../api/axios'
+import TableWrapper from '../../components/TableWrapper'
 
 function AdminStudents() {
   const [selectedStudent, setSelectedStudent] = useState(null)
@@ -45,34 +46,36 @@ function AdminStudents() {
 
       {/* Students Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b">
-            <tr>
-              <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Name</th>
-              <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Belt Grade</th>
-              <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Contact</th>
-              <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Joined</th>
-              <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {isLoading ? (
-              <tr><td colSpan="5" className="text-center py-8 text-gray-500">Loading...</td></tr>
-            ) : filtered?.length === 0 ? (
-              <tr><td colSpan="5" className="text-center py-8 text-gray-500">No students found</td></tr>
-            ) : (
-              filtered?.map(s => (
-                <tr key={s.id} className="border-b hover:bg-gray-50 cursor-pointer" onClick={() => setSelectedStudent(s)}>
-                  <td className="px-6 py-4 font-medium">{s.full_name}</td>
-                  <td className="px-6 py-4 capitalize">{s.belt_grade}</td>
-                  <td className="px-6 py-4">{s.contact}</td>
-                  <td className="px-6 py-4 text-gray-500 text-sm">{new Date(s.created_at).toLocaleDateString()}</td>
-                  <td className="px-6 py-4 text-blue-600 text-sm">View →</td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+        <TableWrapper>
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Name</th>
+                <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Belt Grade</th>
+                <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Contact</th>
+                <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Joined</th>
+                <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {isLoading ? (
+                <tr><td colSpan="5" className="text-center py-8 text-gray-500">Loading...</td></tr>
+              ) : filtered?.length === 0 ? (
+                <tr><td colSpan="5" className="text-center py-8 text-gray-500">No students found</td></tr>
+              ) : (
+                filtered?.map(s => (
+                  <tr key={s.id} className="border-b hover:bg-gray-50 cursor-pointer" onClick={() => setSelectedStudent(s)}>
+                    <td className="px-6 py-4 font-medium">{s.full_name}</td>
+                    <td className="px-6 py-4 capitalize">{s.belt_grade}</td>
+                    <td className="px-6 py-4">{s.contact}</td>
+                    <td className="px-6 py-4 text-gray-500 text-sm">{new Date(s.created_at).toLocaleDateString()}</td>
+                    <td className="px-6 py-4 text-blue-600 text-sm">View →</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </TableWrapper>
       </div>
 
       {selectedStudent && (

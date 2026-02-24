@@ -30,7 +30,8 @@ function Login() {
         })
         fullName = profile.data?.full_name
       } catch {
-        // No student profile — fine for admins who haven't set one up yet
+        // No student profile — use email prefix as fallback
+        fullName = res.data.email?.split('@')[0]
       }
       login(
         { role: res.data.role, branch_id: res.data.branch_id, full_name: fullName },

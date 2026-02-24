@@ -4,6 +4,7 @@ import MainLayout from '../layouts/MainLayout'
 import FeeStatusBadge from '../components/FeeStatusBadge'
 import api from '../api/axios'
 import PaymentModal from '../components/PaymentModal'
+import TableWrapper from '../components/TableWrapper'
 
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
@@ -165,54 +166,56 @@ function Fees() {
 
       {/* Fee History Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b">
-            <tr>
-              <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Month</th>
-              <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Year</th>
-              <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Amount</th>
-              <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Payment Type</th>
-              <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Paid On</th>
-              <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Status</th>
-              <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Action</th>
+        <TableWrapper>
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Month</th>
+                <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Year</th>
+                <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Amount</th>
+                <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Payment Type</th>
+                <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Paid On</th>
+                <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Status</th>
+                <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Action</th>
 
-            </tr>
-          </thead>
-          <tbody>
-            {isLoading ? (
-              <tr><td colSpan="7" className="text-center py-8 text-gray-500">Loading...</td></tr>
-            ) : feeRecords?.length === 0 ? (
-              <tr><td colSpan="7" className="text-center py-8 text-gray-500">No fee records yet</td></tr>
-            ) : (
-              feeRecords?.map(record => (
-                <tr key={record.id} className="border-b hover:bg-gray-50">
-                  <td className="px-6 py-4">{MONTHS[record.month - 1]}</td>
-                  <td className="px-6 py-4">{record.year}</td>
-                  <td className="px-6 py-4">{record.amount ? `Rs.${record.amount}` : '—'}</td>
-                  <td className="px-6 py-4 capitalize">{record.payment_type || '—'}</td>
-                  <td className="px-6 py-4">{record.paid_at ? new Date(record.paid_at).toLocaleDateString() : '—'}</td>
-                  <td className="px-6 py-4"><FeeStatusBadge status={record.status} /></td>
-                  <td className="px-6 py-4">
-                    {record.status === 'pending' || record.status === 'no_record' ? (
-                      <button
-                        onClick={() => setPaymentModal({
-                          month: record.month,
-                          year: record.year,
-                          amount: record.amount || 1500  // default amount if not set
-                        })}
-                        className="bg-gray-900 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-gray-700"
-                      >
-                        Pay Now
-                      </button>
-                    ) : (
-                      <span className="text-gray-300 text-xs">—</span>
-                    )}
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              </tr>
+            </thead>
+            <tbody>
+              {isLoading ? (
+                <tr><td colSpan="7" className="text-center py-8 text-gray-500">Loading...</td></tr>
+              ) : feeRecords?.length === 0 ? (
+                <tr><td colSpan="7" className="text-center py-8 text-gray-500">No fee records yet</td></tr>
+              ) : (
+                feeRecords?.map(record => (
+                  <tr key={record.id} className="border-b hover:bg-gray-50">
+                    <td className="px-6 py-4">{MONTHS[record.month - 1]}</td>
+                    <td className="px-6 py-4">{record.year}</td>
+                    <td className="px-6 py-4">{record.amount ? `Rs.${record.amount}` : '—'}</td>
+                    <td className="px-6 py-4 capitalize">{record.payment_type || '—'}</td>
+                    <td className="px-6 py-4">{record.paid_at ? new Date(record.paid_at).toLocaleDateString() : '—'}</td>
+                    <td className="px-6 py-4"><FeeStatusBadge status={record.status} /></td>
+                    <td className="px-6 py-4">
+                      {record.status === 'pending' || record.status === 'no_record' ? (
+                        <button
+                          onClick={() => setPaymentModal({
+                            month: record.month,
+                            year: record.year,
+                            amount: record.amount || 1500  // default amount if not set
+                          })}
+                          className="bg-gray-900 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-gray-700"
+                        >
+                          Pay Now
+                        </button>
+                      ) : (
+                        <span className="text-gray-300 text-xs">—</span>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </TableWrapper>
       </div>
 
       {paymentModal && (

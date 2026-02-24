@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import MainLayout from '../../layouts/MainLayout'
 import StudentProfileModal from '../../components/StudentProfileModal'
 import api from '../../api/axios'
+import TableWrapper from '../../components/TableWrapper'
 
 function SuperAdminStudents() {
   const [selectedStudent, setSelectedStudent] = useState(null)
@@ -96,16 +97,17 @@ function SuperAdminStudents() {
 
       {/* Students Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden border border-indigo-100">
-        <table className="w-full">
-          <thead className="bg-indigo-900 text-white">
-            <tr>
-              <th className="text-left px-6 py-3 text-sm font-semibold">Name</th>
-              <th className="text-left px-6 py-3 text-sm font-semibold">Branch</th>
-              <th className="text-left px-6 py-3 text-sm font-semibold">Belt Grade</th>
-              <th className="text-left px-6 py-3 text-sm font-semibold">Contact</th>
-              <th className="text-left px-6 py-3 text-sm font-semibold">Joined</th>
-            </tr>
-          </thead>
+        <TableWrapper>
+          <table className="w-full">
+            <thead className="bg-indigo-900 text-white">
+              <tr>
+                <th className="text-left px-6 py-3 text-sm font-semibold">Name</th>
+                <th className="text-left px-6 py-3 text-sm font-semibold">Branch</th>
+                <th className="text-left px-6 py-3 text-sm font-semibold">Belt Grade</th>
+                <th className="text-left px-6 py-3 text-sm font-semibold">Contact</th>
+                <th className="text-left px-6 py-3 text-sm font-semibold">Joined</th>
+              </tr>
+            </thead>
           <tbody>
             {isLoading ? (
               <tr><td colSpan="5" className="text-center py-8 text-gray-500">Loading...</td></tr>
@@ -135,7 +137,8 @@ function SuperAdminStudents() {
               ))
             )}
           </tbody>
-        </table>
+          </table>
+        </TableWrapper>
       </div>
 
       {selectedStudent && (

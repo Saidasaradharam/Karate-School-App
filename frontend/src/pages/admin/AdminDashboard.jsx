@@ -6,6 +6,8 @@ import ManualFeeModal from '../../components/ManualFeeModal'
 import Toast from '../../components/Toast'
 import { useToast } from '../../hooks/useToast'
 import api from '../../api/axios'
+import TableWrapper from '../../components/TableWrapper'
+
 
 function AdminDashboard() {
   const queryClient = useQueryClient()
@@ -133,31 +135,33 @@ function AdminDashboard() {
             </button>
           </div>
         </div>
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b">
-            <tr>
-              <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Student</th>
-              <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Month/Year</th>
-              <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Amount</th>
-              <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Paid At</th>
-              <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredOverview?.length === 0 ? (
-              <tr><td colSpan="5" className="text-center py-8 text-gray-500">No records found</td></tr>            ) : (
-              filteredOverview?.map(s => (
-                <tr key={s.student_id} className="border-b hover:bg-gray-50">
-                  <td className="px-6 py-4 font-medium">{s.full_name}</td>
-                  <td className="px-6 py-4">{s.month}/{s.year}</td>
-                  <td className="px-6 py-4">{s.amount ? `Rs.${s.amount}` : '—'}</td>
-                  <td className="px-3 py-2">{s.paid_at ? new Date(s.paid_at).toLocaleDateString() : '—'}</td>
-                  <td className="px-6 py-4"><FeeStatusBadge status={s.status} /></td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+        <TableWrapper>
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Student</th>
+                <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Month/Year</th>
+                <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Amount</th>
+                <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Paid At</th>
+                <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredOverview?.length === 0 ? (
+                <tr><td colSpan="5" className="text-center py-8 text-gray-500">No records found</td></tr>            ) : (
+                filteredOverview?.map(s => (
+                  <tr key={s.student_id} className="border-b hover:bg-gray-50">
+                    <td className="px-6 py-4 font-medium">{s.full_name}</td>
+                    <td className="px-6 py-4">{s.month}/{s.year}</td>
+                    <td className="px-6 py-4">{s.amount ? `Rs.${s.amount}` : '—'}</td>
+                    <td className="px-3 py-2">{s.paid_at ? new Date(s.paid_at).toLocaleDateString() : '—'}</td>
+                    <td className="px-6 py-4"><FeeStatusBadge status={s.status} /></td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </TableWrapper>
       </div>
 
       {/* Pending Offline Requests */}

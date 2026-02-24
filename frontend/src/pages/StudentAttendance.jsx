@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import MainLayout from '../layouts/MainLayout'
 import api from '../api/axios'
+import TableWrapper from '../components/TableWrapper'
 
 const STATUS_STYLES = {
   present: 'bg-green-100 text-green-800',
@@ -54,36 +55,39 @@ function StudentAttendance() {
 
       {/* Attendance Records */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b">
-            <tr>
-              <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Date</th>
-              <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Day</th>
-              <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {isLoading ? (
-              <tr><td colSpan="3" className="text-center py-8 text-gray-500">Loading...</td></tr>
-            ) : records?.length === 0 ? (
-              <tr><td colSpan="3" className="text-center py-8 text-gray-500">No attendance records for this month</td></tr>
-            ) : (
-              records?.map(r => (
-                <tr key={r.id} className="border-b hover:bg-gray-50">
-                  <td className="px-6 py-4">{r.date}</td>
-                  <td className="px-6 py-4 text-gray-500">
-                    {new Date(r.date).toLocaleDateString('en-US', { weekday: 'long' })}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2 py-1 rounded-full text-xs font-semibold capitalize ${STATUS_STYLES[r.status]}`}>
-                      {r.status.replace('_', ' ')}
-                    </span>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+        <TableWrapper>
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Date</th>
+                <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Day</th>
+                <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {isLoading ? (
+                <tr><td colSpan="3" className="text-center py-8 text-gray-500">Loading...</td></tr>
+              ) : records?.length === 0 ? (
+                <tr><td colSpan="3" className="text-center py-8 text-gray-500">No attendance records for this month</td></tr>
+              ) : (
+                records?.map(r => (
+                  <tr key={r.id} className="border-b hover:bg-gray-50">
+                    <td className="px-6 py-4">{r.date}</td>
+                    <td className="px-6 py-4 text-gray-500">
+                      {new Date(r.date).toLocaleDateString('en-US', { weekday: 'long' })}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2 py-1 rounded-full text-xs font-semibold capitalize ${STATUS_STYLES[r.status]}`}>
+                        {r.status.replace('_', ' ')}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </TableWrapper>
+
       </div>
     </MainLayout>
   )

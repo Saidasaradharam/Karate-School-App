@@ -4,6 +4,7 @@ import MainLayout from '../../layouts/MainLayout'
 import Toast from '../../components/Toast'
 import { useToast } from '../../hooks/useToast'
 import api from '../../api/axios'
+import TableWrapper from '../../components/TableWrapper'
 
 function SuperAdminDashboard() {
   const queryClient = useQueryClient()
@@ -68,44 +69,46 @@ function SuperAdminDashboard() {
         <div className="p-4 border-b">
           <h3 className="font-semibold">Students Per Branch</h3>
         </div>
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b">
-            <tr>
-              <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Branch</th>
-              <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Location</th>
-              <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Students</th>
-              <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Admins</th>
-              <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Assigned Admins</th>
-              <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {branchesLoading ? (
-              <tr><td colSpan="6" className="text-center py-8 text-gray-500">Loading...</td></tr>
-            ) : branchesOverview?.length === 0 ? (
-              <tr><td colSpan="6" className="text-center py-8 text-gray-500">No branches found</td></tr>
-            ) : (
-              branchesOverview?.map(branch => (
-                <tr key={branch.id} className="border-b hover:bg-gray-50">
-                  <td className="px-6 py-4 font-medium">{branch.name}</td>
-                  <td className="px-6 py-4 text-gray-500">{branch.location}</td>
-                  <td className="px-6 py-4">{branch.student_count}</td>
-                  <td className="px-6 py-4">{branch.admin_count}</td>
-                  <td className="px-6 py-4 text-sm text-gray-500">
-                    {branch.admins.length > 0
-                      ? branch.admins.map(a => a.email).join(', ')
-                      : '—'}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${branch.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
-                      {branch.is_active ? 'Active' : 'Inactive'}
-                    </span>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+        <TableWrapper>
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Branch</th>
+                <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Location</th>
+                <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Students</th>
+                <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Admins</th>
+                <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Assigned Admins</th>
+                <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {branchesLoading ? (
+                <tr><td colSpan="6" className="text-center py-8 text-gray-500">Loading...</td></tr>
+              ) : branchesOverview?.length === 0 ? (
+                <tr><td colSpan="6" className="text-center py-8 text-gray-500">No branches found</td></tr>
+              ) : (
+                branchesOverview?.map(branch => (
+                  <tr key={branch.id} className="border-b hover:bg-gray-50">
+                    <td className="px-6 py-4 font-medium">{branch.name}</td>
+                    <td className="px-6 py-4 text-gray-500">{branch.location}</td>
+                    <td className="px-6 py-4">{branch.student_count}</td>
+                    <td className="px-6 py-4">{branch.admin_count}</td>
+                    <td className="px-6 py-4 text-sm text-gray-500">
+                      {branch.admins.length > 0
+                        ? branch.admins.map(a => a.email).join(', ')
+                        : '—'}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${branch.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
+                        {branch.is_active ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </TableWrapper>
       </div>
 
       {/* Branch Requests */}

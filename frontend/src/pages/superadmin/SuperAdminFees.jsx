@@ -6,6 +6,8 @@ import Toast from '../../components/Toast'
 import { useToast } from '../../hooks/useToast'
 import FeeStatusBadge from '../../components/FeeStatusBadge'
 import api from '../../api/axios'
+import TableWrapper from '../../components/TableWrapper'
+
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 
@@ -186,16 +188,17 @@ function SuperAdminFees() {
 
       {/* Fee Overview Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden border border-indigo-100">
-        <table className="w-full">
-          <thead className="bg-indigo-900 text-white">
-            <tr>
-              <th className="text-left px-6 py-3 text-sm font-semibold">Student</th>
-              <th className="text-left px-6 py-3 text-sm font-semibold">Month/Year</th>
-              <th className="text-left px-6 py-3 text-sm font-semibold">Amount</th>
-              <th className="text-left px-6 py-3 text-sm font-semibold">Paid On</th>
-              <th className="text-left px-6 py-3 text-sm font-semibold">Status</th>
-            </tr>
-          </thead>
+        <TableWrapper>
+          <table className="w-full">
+            <thead className="bg-indigo-900 text-white">
+              <tr>
+                <th className="text-left px-6 py-3 text-sm font-semibold">Student</th>
+                <th className="text-left px-6 py-3 text-sm font-semibold">Month/Year</th>
+                <th className="text-left px-6 py-3 text-sm font-semibold">Amount</th>
+                <th className="text-left px-6 py-3 text-sm font-semibold">Paid On</th>
+                <th className="text-left px-6 py-3 text-sm font-semibold">Status</th>
+              </tr>
+            </thead>
           <tbody>
             {filteredOverview?.length === 0 ? (
               <tr><td colSpan="5" className="text-center py-8 text-gray-500">No records for this month</td></tr>
@@ -211,7 +214,8 @@ function SuperAdminFees() {
               ))
             )}
           </tbody>
-        </table>
+          </table>
+        </TableWrapper>
       </div>
 
       {showModal && (
