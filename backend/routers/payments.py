@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from utils.notify import notify_user
 from database import get_db
 from models.models import User, Student, FeeRecord, FeeStatus, OfflinePaymentRequest, RequestStatus, UserRole
 from auth.dependencies import get_current_user, require_admin
@@ -19,7 +20,7 @@ class OfflineRequestCreate(BaseModel):
     amount: float
     admin_id: int
     paid_date: Optional[str] = None
-    payment_type: str = "cash"  # add this
+    payment_type: str = "cash"
 
 
 class OfflineRequestAction(BaseModel):
@@ -30,11 +31,6 @@ class AdminDirectEntry(BaseModel):
     month: int
     year: int
     amount: float
-
-def create_notification(db: Session, user_id: int, message: str, triggered_by: int = None):
-    notification = Notification(user_id=user_id, message=message, triggered_by=triggered_by)
-    db.add(notification)
-    db.commit()
     
 class OnlinePaymentCreate(BaseModel):
     month: int
@@ -118,6 +114,7 @@ def verify_payment(
         db,
         user_id=current_user.id,
         message=f"Online payment of Rs.{data.amount} for {data.month}/{data.year} successful",
+        triggered_by=current_user.id,
         push_title="Payment Successful",
         push_url="/fees"
     )
@@ -165,12 +162,14 @@ def create_offline_request(data: OfflineRequestCreate, db: Session = Depends(get
     db.commit()
     db.refresh(request)
 
-    create_notification(
-    db,
-    user_id=data.admin_id,
-    message=f"New offline payment request from {student.full_name} for {data.month}/{data.year} — Rs.{data.amount}",
-    triggered_by=current_user.id
-)
+    notify_user(
+        db,
+        user_id=data.admin_id,
+        message=f"New offline payment request from {student.full_name} for {data.month}/{data.year} — Rs.{data.amount}",
+        triggered_by=current_user.id,
+        push_title="New Payment Request",
+        push_url="/admin/dashboard"
+    )
     return request
 
 @router.get("/offline/pending")
@@ -215,7 +214,14 @@ def approve_offline_request(id: int, db: Session = Depends(get_db), current_user
             paid_at=datetime.strptime(request.paid_date, "%Y-%m-%d") if request.paid_date else datetime.utcnow()
         )
         db.add(fee)
-    create_notification(db, student.user_id, f"Your {request.payment_type} payment of {request.amount} for {request.month}/{request.year} has been approved", triggered_by=current_user.id)
+    notify_user(
+        db,
+        user_id=student.user_id,
+        message=f"Your {request.payment_type} payment of Rs.{request.amount} for {request.month}/{request.year} has been approved",
+        triggered_by=current_user.id,
+        push_title="Payment Approved",
+        push_url="/fees"
+    )
     db.commit()
     return {"message": "Payment approved", "request_id": id}
 
@@ -239,7 +245,14 @@ def reject_offline_request(id: int, data: OfflineRequestAction, db: Session = De
     ).first()
     if fee:
         fee.status = FeeStatus.rejected
-    create_notification(db, student.user_id, f"Your cash payment request for {request.month}/{request.year} was rejected", triggered_by=current_user.id)
+    notify_user(
+        db,
+        user_id=student.user_id,
+        message=f"Your {request.payment_type} payment request for {request.month}/{request.year} was rejected",
+        triggered_by=current_user.id,
+        push_title="Payment Rejected",
+        push_url="/fees"
+    )
     db.commit()
     return {"message": "Payment rejected", "reason": data.reason}
 

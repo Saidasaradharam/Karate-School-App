@@ -5,6 +5,7 @@ from models.models import User, Student, UserRole, ActiveBeltGrade
 from auth.dependencies import get_current_user, require_admin, require_super_admin
 from pydantic import BaseModel
 from typing import Optional
+from utils.sanitize import sanitize
 
 router = APIRouter(prefix="/students", tags=["Students"])
 

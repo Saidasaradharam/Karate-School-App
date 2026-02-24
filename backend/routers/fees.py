@@ -81,7 +81,7 @@ def get_branch_overview(
             "status": record.status.value if record else "no_record",
             "amount": record.amount if record else None,
             "payment_type": record.payment_type if record else None,
-            "paid_at": record.paid_at.isoformat() if record and record.paid_at else None  # add this
+            "paid_at": record.paid_at.isoformat() if record and record.paid_at else None
         })
     return result
 
@@ -100,8 +100,8 @@ def get_branch_summary(db: Session = Depends(get_db), current_user: User = Depen
     paid = db.query(FeeRecord).filter(
         FeeRecord.student_id.in_(student_ids),
         FeeRecord.status.in_([FeeStatus.paid_online, FeeStatus.paid_offline]),
-        FeeRecord.month == now.month,   # add this
-        FeeRecord.year == now.year      # add this
+        FeeRecord.month == now.month,
+        FeeRecord.year == now.year
     ).count()
     pending = db.query(FeeRecord).filter(
         FeeRecord.student_id.in_(student_ids),
@@ -174,7 +174,7 @@ def add_manual_entry(data: ManualEntryCreate, db: Session = Depends(get_db), cur
         existing.status = FeeStatus.paid_offline
         existing.amount = data.amount
         existing.payment_type = data.payment_type
-        existing.paid_at = paid_at  # add this
+        existing.paid_at = paid_at
         create_notification(db, student.user_id, f"Admin logged a cash payment of {data.amount} for {data.month}/{data.year}", triggered_by=current_user.id)
         db.commit()
         return existing
@@ -185,7 +185,7 @@ def add_manual_entry(data: ManualEntryCreate, db: Session = Depends(get_db), cur
         status=FeeStatus.paid_offline,
         payment_type=data.payment_type,
         amount=data.amount,
-        paid_at=paid_at  # add this
+        paid_at=paid_at
     )
     db.add(record)
     create_notification(db, student.user_id, f"Admin logged a cash payment of {data.amount} for {data.month}/{data.year}", triggered_by=current_user.id)

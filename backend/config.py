@@ -16,7 +16,8 @@ class Settings(BaseSettings):
     VAPID_EMAIL: str = "mailto:you@email.com"
     ENVIRONMENT: str = "development"
     ONLINE_PAYMENTS_ENABLED: bool = False
-
+    allowed_origins: str = "http://localhost:5173,http://localhost:4173" 
+    
     class Config:
         env_file = ".env"
 

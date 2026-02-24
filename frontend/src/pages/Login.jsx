@@ -45,7 +45,13 @@ function Login() {
         navigate('/dashboard')
       }
     } catch (err) {
-      setError(err.response?.data?.detail || 'Login failed')
+      if (err.response?.status === 429) {
+        setError('Too many login attempts. Please wait a minute and try again.')
+      } else if (err.response?.data?.detail) {
+        setError(err.response.data.detail)
+      } else {
+        setError('Login failed. Please check your credentials.')
+      }
     } finally {
       setLoading(false)
     }
