@@ -1,7 +1,10 @@
-import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import MainLayout from '../layouts/MainLayout'
 import FeeStatusBadge from '../components/FeeStatusBadge'
 import api from '../api/axios'
+import Toast from '../components/Toast'
+import { useToast } from '../hooks/useToast'
 
 const BELT_COLORS = {
   white: '#f8f8f8', yellow: '#fde047', blue: '#3b82f6',
@@ -15,6 +18,25 @@ function getBeltColor(grade) {
 }
 
 function Dashboard() {
+  const queryClient = useQueryClient()
+  const { toasts, showToast } = useToast()  
+
+  const { data: promotionRequest } = useQuery({
+    queryKey: ['my-promotion-request'],
+    queryFn: () => api.get('/admins/promotion-requests/my-request').then(res => res.data).catch(() => null)
+  })
+
+  const requestPromotion = useMutation({
+    mutationFn: (reason) => api.post('/admins/promotion-requests', { reason }),
+    onSuccess: () => {
+      showToast('Promotion request submitted!')
+      queryClient.invalidateQueries(['my-promotion-request'])
+    },
+    onError: (err) => showToast(err.response?.data?.detail || 'Failed to submit', 'error')
+  })
+
+  const [showPromotionForm, setShowPromotionForm] = useState(false)
+  const [promotionReason, setPromotionReason] = useState('')
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ['my-profile'],
     queryFn: () => api.get('/students/me').then(res => res.data)
@@ -34,6 +56,7 @@ function Dashboard() {
 
   return (
     <MainLayout>
+      <Toast toasts={toasts} />
 
       {/* Hero Header */}
       <div className="relative bg-gray-900 rounded-2xl p-8 mb-6 overflow-hidden">
@@ -88,6 +111,68 @@ function Dashboard() {
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Last Graduation</p>
           <p className="text-2xl font-bold">{profile?.last_graduation_date || 'Not set'}</p>
         </div>
+      </div>
+
+      {/* Promotion Request Card */}
+      <div className="bg-white rounded-2xl shadow p-5">
+        <h3 className="font-bold mb-1">Want to become an Admin?</h3>
+        <p className="text-sm text-gray-500 mb-3">Request admin privileges from the super admin</p>
+
+        {promotionRequest?.status === 'pending' && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-3">
+            <p className="text-sm text-yellow-800 font-medium">⏳ Promotion request pending review</p>
+          </div>
+        )}
+
+        {promotionRequest?.status === 'approved' && (
+          <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+            <p className="text-sm text-green-800 font-medium">✅ Your promotion was approved!</p>
+          </div>
+        )}
+
+        {promotionRequest?.status === 'rejected' && (
+          <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-3">
+            <p className="text-sm text-red-800 font-medium">❌ Request rejected{promotionRequest.rejection_reason ? `: ${promotionRequest.rejection_reason}` : ''}</p>
+          </div>
+        )}
+
+        {(!promotionRequest || promotionRequest?.status === 'rejected') && (
+          <>
+            {showPromotionForm ? (
+              <div className="space-y-3">
+                <textarea
+                  value={promotionReason}
+                  onChange={e => setPromotionReason(e.target.value)}
+                  placeholder="Why do you want to become an admin? (optional)"
+                  rows={3}
+                  className="w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 resize-none"
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => requestPromotion.mutate(promotionReason)}
+                    disabled={requestPromotion.isPending}
+                    className="flex-1 bg-gray-900 text-white py-2.5 rounded-xl text-sm font-semibold disabled:opacity-50"
+                  >
+                    {requestPromotion.isPending ? 'Submitting...' : 'Submit Request'}
+                  </button>
+                  <button
+                    onClick={() => setShowPromotionForm(false)}
+                    className="flex-1 border py-2.5 rounded-xl text-sm font-semibold hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowPromotionForm(true)}
+                className="w-full border border-gray-300 py-2.5 rounded-xl text-sm font-semibold hover:bg-gray-50"
+              >
+                Request Admin Role
+              </button>
+            )}
+          </>
+        )}
       </div>
 
     </MainLayout>

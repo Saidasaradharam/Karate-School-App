@@ -17,6 +17,7 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from config import settings
+from routers.admins import router as admins_router
 
 origins = settings.allowed_origins.split(",")
 
@@ -50,6 +51,7 @@ app.include_router(notifications_router)
 app.include_router(photos_router)
 app.include_router(belt_grades_router)
 app.include_router(attendance_router)
+app.include_router(admins_router)
 
 # Middlewares — each is a separate call
 app.add_middleware(

@@ -4,11 +4,16 @@ import MainLayout from '../../layouts/MainLayout'
 import StudentProfileModal from '../../components/StudentProfileModal'
 import api from '../../api/axios'
 import TableWrapper from '../../components/TableWrapper'
+import PromoteStudentModal from '../../components/PromoteStudentModal'
+import { useToast } from '../../hooks/useToast'
+import Toast from '../../components/Toast'
 
 function AdminStudents() {
   const [selectedStudent, setSelectedStudent] = useState(null)
   const [search, setSearch] = useState('')
   const [filterBelt, setFilterBelt] = useState('')
+  const [showPromote, setShowPromote] = useState(false)
+  const { toasts, showToast } = useToast()
 
   const { data: students, isLoading } = useQuery({
     queryKey: ['students'],
@@ -28,7 +33,18 @@ function AdminStudents() {
 
   return (
     <MainLayout>
+      <Toast toasts={toasts} /> {/* Global toast container */}
       <h2 className="text-2xl font-bold mb-6">Students</h2>
+      
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-2xl font-bold">Students</h2>
+        <button
+          onClick={() => setShowPromote(true)}
+          className="border border-gray-300 text-gray-700 px-4 py-2 rounded-xl text-sm font-semibold hover:bg-gray-50"
+        >
+          ↑ Promote to Admin
+        </button>
+      </div>
 
       {/* Filters */}
       <div className="flex gap-3 mb-4">
@@ -82,6 +98,13 @@ function AdminStudents() {
         <StudentProfileModal
           student={selectedStudent}
           onClose={() => setSelectedStudent(null)}
+        />
+      )}
+
+      {showPromote && (
+        <PromoteStudentModal
+          onClose={() => setShowPromote(false)}
+          showToast={showToast}
         />
       )}
     </MainLayout>

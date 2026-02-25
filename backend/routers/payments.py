@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from utils.notify import notify_user
 from database import get_db
 from models.models import User, Student, FeeRecord, FeeStatus, OfflinePaymentRequest, RequestStatus, UserRole
-from auth.dependencies import get_current_user, require_admin
+from auth.dependencies import get_current_user, require_admin, get_admin_branch_ids
 from pydantic import BaseModel
 from typing import Optional
 from models.models import Notification
@@ -174,8 +174,9 @@ def create_offline_request(data: OfflineRequestCreate, db: Session = Depends(get
 
 @router.get("/offline/pending")
 def get_pending_requests(db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
+    branch_ids = get_admin_branch_ids(db, current_user)
     return db.query(OfflinePaymentRequest).join(Student).join(User).filter(
-        User.branch_id == current_user.branch_id,
+        User.branch_id.in_(branch_ids),
         OfflinePaymentRequest.status == RequestStatus.pending
     ).all()
 

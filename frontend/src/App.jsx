@@ -16,6 +16,8 @@ import SuperAdminRoute from './components/SuperAdminRoute'
 import SuperAdminFees from './pages/superadmin/SuperAdminFees'
 import BranchSchedule from './pages/admin/BranchSchedule'
 import StudentProfile from './pages/StudentProfile'
+import SuperAdminBranches from './pages/superadmin/SuperAdminBranches'
+import SuperAdminAdmins from './pages/superadmin/SuperAdminAdmins'
 
 function App() {
   return (
@@ -46,7 +48,9 @@ function App() {
       <Route path="/superadmin/fees" element={
         <SuperAdminRoute><SuperAdminFees /></SuperAdminRoute>
       } />
-      
+      <Route path="/superadmin/branches" element={<SuperAdminRoute><SuperAdminBranches /></SuperAdminRoute>} />
+      <Route path="/superadmin/admins" element={<SuperAdminRoute><SuperAdminAdmins /></SuperAdminRoute>} />
+
     </Routes>
   )
 }

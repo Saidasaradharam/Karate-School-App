@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
 from models.models import User, Student, FeeRecord, FeeStatus, UserRole, Notification
-from auth.dependencies import get_current_user, require_admin, require_super_admin
+from auth.dependencies import get_current_user, require_admin, require_super_admin, get_admin_branch_ids
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
@@ -59,11 +59,12 @@ def get_branch_overview(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin)
 ):
+    branch_ids = get_admin_branch_ids(db, current_user)
     now = datetime.utcnow()
     month = month or now.month
     year = year or now.year
     students = db.query(Student).join(User).filter(
-        User.branch_id == current_user.branch_id,
+        User.branch_id.in_(branch_ids),
         User.role == UserRole.student
     ).all()
     result = []

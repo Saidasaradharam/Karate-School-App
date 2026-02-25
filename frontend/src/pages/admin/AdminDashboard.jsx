@@ -19,6 +19,19 @@ function AdminDashboard() {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1)
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
   
+  const [showBranchRequest, setShowBranchRequest] = useState(false)
+  const [branchRequestData, setBranchRequestData] = useState({ name: '', location: '', reason: '' })
+
+  const requestBranch = useMutation({
+    mutationFn: (data) => api.post('/branches/request', data),
+    onSuccess: () => {
+      showToast('Branch request submitted to super admin')
+      setShowBranchRequest(false)
+      setBranchRequestData({ name: '', location: '', reason: '' })
+    },
+    onError: (err) => showToast(err.response?.data?.detail || 'Failed to submit', 'error')
+  })
+
   const { data: summary } = useQuery({
     queryKey: ['branch-summary'],
     queryFn: () => api.get('/fees/branch-summary').then(res => res.data)
@@ -99,6 +112,16 @@ function AdminDashboard() {
         ))}
       </div>
 
+      <div className="flex justify-between items-center mb-6">
+        <div className="flex gap-3"></div>
+        <button
+          onClick={() => setShowBranchRequest(true)}
+          className="border border-gray-300 text-gray-700 px-4 py-2 rounded-xl text-sm font-semibold hover:bg-gray-50"
+        >
+          + Request New Branch
+        </button>
+      </div>
+      
       {/* Fee Overview Table */}
       <div className="bg-white rounded-lg shadow mb-8">
         <div className="p-4 border-b flex flex-wrap gap-3 justify-between items-center">
@@ -112,16 +135,16 @@ function AdminDashboard() {
             />
 
             <select value={selectedMonth} onChange={e => setSelectedMonth(parseInt(e.target.value))} className="border rounded px-3 py-1.5 text-sm">
-  {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((m, i) => (
-    <option key={i} value={i+1}>{m}</option>
-  ))}
-</select>
-<input
-  type="number"
-  value={selectedYear}
-  onChange={e => setSelectedYear(parseInt(e.target.value))}
-  className="border rounded px-3 py-1.5 text-sm w-20"
-/>
+              {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((m, i) => (
+                <option key={i} value={i+1}>{m}</option>
+              ))}
+            </select>
+            <input
+              type="number"
+              value={selectedYear}
+              onChange={e => setSelectedYear(parseInt(e.target.value))}
+              className="border rounded px-3 py-1.5 text-sm w-20"
+            />
             <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="border rounded px-3 py-1.5 text-sm">
               <option value="">All statuses</option>
               <option value="paid_online">Paid Online</option>
@@ -163,6 +186,60 @@ function AdminDashboard() {
           </table>
         </TableWrapper>
       </div>
+
+      {showBranchRequest && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md mx-4">
+            <h3 className="font-bold text-lg mb-1">Request New Branch</h3>
+            <p className="text-sm text-gray-500 mb-4">Submit a request to super admin for a new branch</p>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Branch Name <span className="text-red-500">*</span></label>
+                <input
+                  value={branchRequestData.name}
+                  onChange={e => setBranchRequestData({...branchRequestData, name: e.target.value})}
+                  placeholder="Chennai South"
+                  className="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Location <span className="text-red-500">*</span></label>
+                <input
+                  value={branchRequestData.location}
+                  onChange={e => setBranchRequestData({...branchRequestData, location: e.target.value})}
+                  placeholder="Velachery, Chennai"
+                  className="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Reason <span className="text-gray-400 font-normal normal-case">(optional)</span></label>
+                <textarea
+                  value={branchRequestData.reason}
+                  onChange={e => setBranchRequestData({...branchRequestData, reason: e.target.value})}
+                  placeholder="Why is this branch needed?"
+                  rows={3}
+                  className="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 resize-none"
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-5">
+              <button
+                onClick={() => requestBranch.mutate(branchRequestData)}
+                disabled={requestBranch.isPending || !branchRequestData.name || !branchRequestData.location}
+                className="flex-1 bg-gray-900 text-white py-2.5 rounded-xl font-semibold text-sm disabled:opacity-50"
+              >
+                {requestBranch.isPending ? 'Submitting...' : 'Submit Request'}
+              </button>
+              <button
+                onClick={() => setShowBranchRequest(false)}
+                className="flex-1 border py-2.5 rounded-xl font-semibold text-sm hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Pending Offline Requests */}
       {pendingRequests?.length > 0 && (

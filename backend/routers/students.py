@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
 from models.models import User, Student, UserRole, ActiveBeltGrade
-from auth.dependencies import get_current_user, require_admin, require_super_admin
+from auth.dependencies import get_current_user, require_admin, require_super_admin, get_admin_branch_ids
 from pydantic import BaseModel
 from typing import Optional
 from utils.sanitize import sanitize
@@ -93,10 +93,13 @@ def get_students(skip: int = 0, limit: int = 20, db: Session = Depends(get_db), 
             {**s.__dict__, "branch_id": branch_id}
             for s, branch_id in students
         ]
-    return db.query(Student).join(User).filter(
-        User.branch_id == current_user.branch_id,
-        User.role == UserRole.student
-    ).offset(skip).limit(limit).all()
+    else:
+        branch_ids = get_admin_branch_ids(db, current_user)
+        students = db.query(Student).join(User).filter(
+            User.branch_id.in_(branch_ids),
+            User.role == UserRole.student
+        ).offset(skip).limit(limit).all()
+        return students 
 
 @router.get("/{student_id}")
 def get_student(student_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):

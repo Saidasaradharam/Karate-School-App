@@ -4,6 +4,7 @@ import MainLayout from '../../layouts/MainLayout'
 import Toast from '../../components/Toast'
 import { useToast } from '../../hooks/useToast'
 import api from '../../api/axios'
+import BranchSelector from '../../components/BranchSelector'
 
 const STATUS_OPTIONS = ['present', 'absent', 'informed_leave']
 const STATUS_STYLES = {
@@ -17,6 +18,7 @@ function AdminAttendance() {
   const queryClient = useQueryClient()
   const { toasts, showToast } = useToast()
   const [mode, setMode] = useState('mark')  // 'mark' or 'view'
+  const [selectedBranch, setSelectedBranch] = useState(null)
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
   const [attendanceMap, setAttendanceMap] = useState({})
   const [viewMonth, setViewMonth] = useState(new Date().getMonth() + 1)
@@ -24,22 +26,30 @@ function AdminAttendance() {
 
   // Mark mode query
   const { data: attendanceList, isLoading, error } = useQuery({
-    queryKey: ['branch-attendance', selectedDate],
-    queryFn: () => api.get(`/attendance/branch?date=${selectedDate}`).then(res => {
-      const map = {}
-      res.data.forEach(s => {
-        map[s.student_id] = s.status === 'not_marked' ? 'present' : s.status
+    queryKey: ['branch-attendance', selectedDate, selectedBranch],  // add selectedBranch
+    queryFn: () => {
+      const params = new URLSearchParams({ date: selectedDate })
+      if (selectedBranch) params.append('branch_id', selectedBranch)
+      return api.get(`/attendance/branch?${params}`).then(res => {
+        const map = {}
+        res.data.forEach(s => {
+          map[s.student_id] = s.status === 'not_marked' ? 'present' : s.status
+        })
+        setAttendanceMap(map)
+        return res.data
       })
-      setAttendanceMap(map)
-      return res.data
-    }),
+    },
     enabled: mode === 'mark'
   })
 
   // View mode query
   const { data: historyData, isLoading: historyLoading } = useQuery({
-    queryKey: ['attendance-history', viewMonth, viewYear],
-    queryFn: () => api.get(`/attendance/branch/history?month=${viewMonth}&year=${viewYear}`).then(res => res.data),
+    queryKey: ['attendance-history', viewMonth, viewYear, selectedBranch],  // add selectedBranch
+    queryFn: () => {
+      const params = new URLSearchParams({ month: viewMonth, year: viewYear })
+      if (selectedBranch) params.append('branch_id', selectedBranch)
+      return api.get(`/attendance/branch/history?${params}`).then(res => res.data)
+    },
     enabled: mode === 'view'
   })
 
@@ -81,6 +91,9 @@ function AdminAttendance() {
           </button>
         </div>
       </div>
+
+      <BranchSelector selectedBranch={selectedBranch} onChange={setSelectedBranch} />
+
 
       {/* MARK MODE */}
       {mode === 'mark' && (

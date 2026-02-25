@@ -193,3 +193,30 @@ class Notification(Base):
 
     user = relationship("User", foreign_keys=[user_id])
     triggered_by_user = relationship("User", foreign_keys=[triggered_by])
+
+# Junction table
+class AdminBranch(Base):
+    __tablename__ = "admin_branches"
+
+    id = Column(Integer, primary_key=True, index=True)
+    admin_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    branch_id = Column(Integer, ForeignKey("branches.id"), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    admin = relationship("User", foreign_keys=[admin_id])
+    branch = relationship("Branch", foreign_keys=[branch_id])
+
+class PromotionRequest(Base):
+    __tablename__ = "promotion_requests"
+
+    id = Column(Integer, primary_key=True, index=True)
+    student_id = Column(Integer, ForeignKey("students.id"), nullable=False)
+    reason = Column(String, nullable=True)
+    status = Column(String, default="pending")  # pending, approved, rejected
+    rejection_reason = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    reviewed_at = Column(DateTime, nullable=True)
+    reviewed_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+
+    student = relationship("Student", foreign_keys=[student_id])
+    reviewer = relationship("User", foreign_keys=[reviewed_by])

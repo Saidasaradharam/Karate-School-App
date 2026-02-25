@@ -11,6 +11,30 @@ function SuperAdminDashboard() {
   const { toasts, showToast } = useToast()
   const [rejectReason, setRejectReason] = useState({})
   const [showRejectInput, setShowRejectInput] = useState({})
+  const [showPromotionRequests, setShowPromotionRequests] = useState(false)
+  const [showBranchRequests, setShowBranchRequests] = useState(false)
+  const { data: promotionRequests } = useQuery({
+    queryKey: ['promotion-requests'],
+    queryFn: () => api.get('/admins/promotion-requests').then(res => res.data)
+  })
+
+  const approvePromotion = useMutation({
+    mutationFn: (id) => api.patch(`/admins/promotion-requests/${id}/approve`),
+    onSuccess: () => {
+      showToast('Promotion approved')
+      queryClient.invalidateQueries(['promotion-requests'])
+    },
+    onError: (err) => showToast(err.response?.data?.detail || 'Failed', 'error')
+  })
+
+  const rejectPromotion = useMutation({
+    mutationFn: ({ id, reason }) => api.patch(`/admins/promotion-requests/${id}/reject`, { reason }),
+    onSuccess: () => {
+      showToast('Promotion rejected')
+      queryClient.invalidateQueries(['promotion-requests'])
+    },
+    onError: (err) => showToast(err.response?.data?.detail || 'Failed', 'error')
+  })
 
   const { data: branchesOverview, isLoading: branchesLoading } = useQuery({
     queryKey: ['branches-overview'],
@@ -64,6 +88,135 @@ function SuperAdminDashboard() {
         ))}
       </div>
 
+      {/* Pending Promotion Requests */}
+      <div className="bg-white rounded-2xl shadow p-6 mb-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h3 className="font-bold">⬆️ Promotion Requests</h3>
+            <p className="text-sm text-gray-500 mt-0.5">
+              {promotionRequests?.length || 0} pending
+            </p>
+          </div>
+          <button
+            onClick={() => setShowPromotionRequests(!showPromotionRequests)}
+            className="px-4 py-2 border border-gray-200 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors"
+          >
+            {showPromotionRequests ? 'Hide' : 'View Promotion Requests'}
+          </button>
+        </div>
+
+        {showPromotionRequests && (
+          <div className="mt-4 space-y-3">
+            {promotionRequests?.length === 0 ? (
+              <p className="text-center text-gray-400 text-sm py-4">No pending promotion requests</p>
+            ) : (
+              promotionRequests?.map(req => (
+                <div key={req.id} className="border border-gray-100 rounded-xl p-4 flex justify-between items-start gap-4">
+                  <div>
+                    <p className="font-semibold text-sm">{req.student?.full_name}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      🥋 {req.student?.belt_grade} · 📍 {req.branch?.name}
+                      {req.branch?.location && `, ${req.branch.location}`}
+                    </p>
+                    {req.reason && <p className="text-xs text-gray-400 mt-1 italic">"{req.reason}"</p>}
+                    <p className="text-xs text-gray-400 mt-1">{new Date(req.created_at).toLocaleDateString()}</p>
+                  </div>
+                  <div className="flex gap-2 flex-shrink-0">
+                    <button
+                      onClick={() => approvePromotion.mutate(req.id)}
+                      className="px-3 py-1.5 bg-green-100 text-green-800 rounded-lg text-xs font-semibold hover:bg-green-200"
+                    >
+                      Approve
+                    </button>
+                    <button
+                      onClick={() => rejectPromotion.mutate({ id: req.id, reason: '' })}
+                      className="px-3 py-1.5 bg-red-100 text-red-800 rounded-lg text-xs font-semibold hover:bg-red-200"
+                    >
+                      Reject
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Branch Requests */}
+      <div className="bg-white rounded-2xl shadow p-6 mb-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h3 className="font-bold">🏢 Branch Requests</h3>
+            <p className="text-sm text-gray-500 mt-0.5">
+              {branchRequests?.length || 0} pending
+            </p>
+          </div>
+          <button
+            onClick={() => setShowBranchRequests(!showBranchRequests)}
+            className="px-4 py-2 border border-gray-200 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors"
+          >
+            {showBranchRequests ? 'Hide' : 'View Branch Requests'}
+          </button>
+        </div>
+
+        {showBranchRequests && (
+          <div className="mt-4 space-y-3">
+            {branchRequests?.length === 0 ? (
+              <p className="text-center text-gray-400 text-sm py-4">No pending branch requests</p>
+            ) : (
+              branchRequests?.map(req => (
+                <div key={req.id} className="border border-gray-100 rounded-xl p-4 flex justify-between items-start gap-4">
+                  <div>
+                    <p className="font-semibold text-sm">{req.branch?.name || `Branch ID: ${req.branch_id}`}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">📍 {req.branch?.location}</p>
+                    <p className="text-xs text-gray-400 mt-1">Requested by: {req.requested_by}</p>
+                  </div>
+                  <div className="flex gap-2 flex-shrink-0 items-center">
+                    {showRejectInput[req.id] ? (
+                      <div className="flex gap-2 items-center">
+                        <input
+                          placeholder="Reason for rejection..."
+                          value={rejectReason[req.id] || ''}
+                          onChange={e => setRejectReason(prev => ({...prev, [req.id]: e.target.value}))}
+                          className="border rounded-lg px-3 py-1.5 text-sm w-48"
+                        />
+                        <button
+                          onClick={() => rejectRequest.mutate({ id: req.id, reason: rejectReason[req.id] })}
+                          className="bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-red-700"
+                        >
+                          Confirm
+                        </button>
+                        <button
+                          onClick={() => setShowRejectInput(prev => ({...prev, [req.id]: false}))}
+                          className="border px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-gray-50"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => approveRequest.mutate(req.id)}
+                          className="px-3 py-1.5 bg-green-100 text-green-800 rounded-lg text-xs font-semibold hover:bg-green-200"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => setShowRejectInput(prev => ({...prev, [req.id]: true}))}
+                          className="px-3 py-1.5 bg-red-100 text-red-800 rounded-lg text-xs font-semibold hover:bg-red-200"
+                        >
+                          Reject
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+      </div>
+
       {/* Per Branch Student Summary */}
       <div className="bg-white rounded-lg shadow mb-8">
         <div className="p-4 border-b">
@@ -111,65 +264,6 @@ function SuperAdminDashboard() {
         </TableWrapper>
       </div>
 
-      {/* Branch Requests */}
-      {branchRequests?.length > 0 && (
-        <div className="bg-white rounded-lg shadow mb-8">
-          <div className="p-4 border-b">
-            <h3 className="font-semibold">Pending Branch Requests</h3>
-          </div>
-          <div className="divide-y">
-            {branchRequests.map(req => (
-              <div key={req.id} className="px-6 py-4">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="font-medium">Branch ID: {req.branch_id}</p>
-                    <p className="text-sm text-gray-500">Requested by user ID: {req.requested_by}</p>
-                  </div>
-                  <div className="flex gap-2 items-center">
-                    {showRejectInput[req.id] ? (
-                      <div className="flex gap-2 items-center">
-                        <input
-                          placeholder="Reason for rejection..."
-                          value={rejectReason[req.id] || ''}
-                          onChange={e => setRejectReason(prev => ({...prev, [req.id]: e.target.value}))}
-                          className="border rounded px-3 py-1.5 text-sm w-48"
-                        />
-                        <button
-                          onClick={() => rejectRequest.mutate({ id: req.id, reason: rejectReason[req.id] })}
-                          className="bg-red-600 text-white px-3 py-1.5 rounded text-sm hover:bg-red-700"
-                        >
-                          Confirm
-                        </button>
-                        <button
-                          onClick={() => setShowRejectInput(prev => ({...prev, [req.id]: false}))}
-                          className="border px-3 py-1.5 rounded text-sm hover:bg-gray-50"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    ) : (
-                      <>
-                        <button
-                          onClick={() => approveRequest.mutate(req.id)}
-                          className="bg-green-600 text-white px-3 py-1.5 rounded text-sm hover:bg-green-700"
-                        >
-                          Approve
-                        </button>
-                        <button
-                          onClick={() => setShowRejectInput(prev => ({...prev, [req.id]: true}))}
-                          className="bg-red-600 text-white px-3 py-1.5 rounded text-sm hover:bg-red-700"
-                        >
-                          Reject
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </MainLayout>
   )
 }

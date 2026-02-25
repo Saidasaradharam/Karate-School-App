@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
 from models.models import User, Student, Attendance, BranchSchedule, UserRole
-from auth.dependencies import get_current_user, require_admin
+from auth.dependencies import get_current_user, require_admin, get_admin_branch_ids
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
@@ -99,11 +99,18 @@ def mark_bulk_attendance(data: BulkAttendanceRequest, db: Session = Depends(get_
 def get_branch_attendance(
     date: Optional[str] = None,
     db: Session = Depends(get_db),
+    branch_id: Optional[int] = None,  
     current_user: User = Depends(require_admin)
 ):
+    branch_ids = get_admin_branch_ids(db, current_user)
+    if branch_id:
+        if branch_id not in branch_ids and current_user.role != UserRole.super_admin:
+            raise HTTPException(status_code=403, detail="Access denied to this branch")
+        branch_ids = [branch_id]
+
     date = date or datetime.utcnow().strftime("%Y-%m-%d")
     students = db.query(Student).join(User).filter(
-        User.branch_id == current_user.branch_id,
+        User.branch_id.in_(branch_ids),
         User.role == UserRole.student
     ).all()
     result = []
@@ -181,6 +188,7 @@ def get_student_attendance_summary(
 def get_attendance_history(
     month: Optional[int] = None,
     year: Optional[int] = None,
+    branch_id: Optional[int] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin)
 ):
@@ -188,9 +196,13 @@ def get_attendance_history(
     month = month or now.month
     year = year or now.year
     month_str = f"{year}-{str(month).zfill(2)}"
-
+    branch_ids = get_admin_branch_ids(db, current_user)
+    if branch_id:
+        if branch_id not in branch_ids and current_user.role != UserRole.super_admin:
+            raise HTTPException(status_code=403, detail="Access denied to this branch")
+        branch_ids = [branch_id]
     students = db.query(Student).join(User).filter(
-        User.branch_id == current_user.branch_id,
+        User.branch_id.in_(branch_ids),
         User.role == UserRole.student
     ).all()
 
