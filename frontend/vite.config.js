@@ -9,8 +9,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'logo.png'],
       manifest: {
-        name: 'Karate School Management',
-        short_name: 'Karate School',
+        name: 'Kodokan Karate School Management',
+        short_name: 'Kodokan India',
         description: 'Manage your karate school — fees, attendance, photos',
         theme_color: '#111827',
         background_color: '#111827',

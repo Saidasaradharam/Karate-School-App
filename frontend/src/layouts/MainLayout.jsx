@@ -90,7 +90,7 @@ function MainLayout({ children }) {
               className="w-9 h-9 rounded-lg object-cover"
               onError={e => e.target.style.display = 'none'}
             />
-            <h1 className="text-lg font-bold">Karate School</h1>
+            <h1 className="text-lg font-bold">Kodokan India</h1>
           </div>
           <div className="flex items-center justify-between">
             <div>
@@ -133,7 +133,7 @@ function MainLayout({ children }) {
               className="w-9 h-9 rounded-lg object-cover"
               onError={e => e.target.style.display = 'none'}
             />
-            <h1 className="text-lg font-bold">Karate School</h1>
+            <h1 className="text-lg font-bold">Kodokan India</h1>
           </div>
           <div className="flex items-center justify-between">
             <div>
@@ -175,7 +175,7 @@ function MainLayout({ children }) {
             <div className="w-5 h-0.5 bg-white mb-1" />
             <div className="w-5 h-0.5 bg-white" />
           </button>
-          <span className="font-bold">Karate School</span>
+          <span className="font-bold">Kodokan India</span>
           <Link to="/notifications" className="relative p-2">
             <span className="text-xl">🔔</span>
             {unreadCount > 0 && (
