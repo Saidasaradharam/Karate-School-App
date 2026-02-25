@@ -18,6 +18,7 @@ import BranchSchedule from './pages/admin/BranchSchedule'
 import StudentProfile from './pages/StudentProfile'
 import SuperAdminBranches from './pages/superadmin/SuperAdminBranches'
 import SuperAdminAdmins from './pages/superadmin/SuperAdminAdmins'
+import BranchManagement from './pages/shared/BranchManagement'
 
 function App() {
   return (
@@ -48,8 +49,10 @@ function App() {
       <Route path="/superadmin/fees" element={
         <SuperAdminRoute><SuperAdminFees /></SuperAdminRoute>
       } />
-      <Route path="/superadmin/branches" element={<SuperAdminRoute><SuperAdminBranches /></SuperAdminRoute>} />
+      {/* <Route path="/superadmin/branches" element={<SuperAdminRoute><SuperAdminBranches /></SuperAdminRoute>} /> */}
       <Route path="/superadmin/admins" element={<SuperAdminRoute><SuperAdminAdmins /></SuperAdminRoute>} />
+      <Route path="/superadmin/branches" element={<SuperAdminRoute><BranchManagement /></SuperAdminRoute>} />
+      <Route path="/admin/branches" element={<ProtectedRoute><BranchManagement /></ProtectedRoute>} />
 
     </Routes>
   )

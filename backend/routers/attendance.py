@@ -30,6 +30,13 @@ def validate_class_day(branch_id: int, date_str: str, db: Session):
             status_code=400,
             detail=f"No class scheduled on {date.strftime('%A')} for this branch"
         )
+    
+BELT_ORDER = [
+    "white", "yellow", "blue", "orange", "purple", "purple-1",
+    "green", "green-1", "brown", "brown-1", "black-1", "black-2",
+    "black-3", "black-4", "black-5", "black-6", "black-7", "black-8",
+    "black-9", "black-10"
+]        
 
 @router.post("/mark")
 def mark_attendance(data: AttendanceMarkRequest, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
@@ -113,6 +120,12 @@ def get_branch_attendance(
         User.branch_id.in_(branch_ids),
         User.role == UserRole.student
     ).all()
+    
+    # Sort by belt grade in reverse order (black-10 first, white last)
+    students.sort(
+        key=lambda s: BELT_ORDER.index(s.belt_grade) if s.belt_grade in BELT_ORDER else -1,
+        reverse=True
+    )
     result = []
     for student in students:
         record = db.query(Attendance).filter(
@@ -205,6 +218,12 @@ def get_attendance_history(
         User.branch_id.in_(branch_ids),
         User.role == UserRole.student
     ).all()
+    
+    # Sort reverse belt order — black-10 first, white last
+    students.sort(
+        key=lambda s: BELT_ORDER.index(s.belt_grade) if s.belt_grade in BELT_ORDER else -1,
+        reverse=True
+    )
 
     # Get all class days for this branch in this month
     schedules = db.query(BranchSchedule).filter(

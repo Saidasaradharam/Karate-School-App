@@ -45,6 +45,7 @@ function MainLayout({ children }) {
           <Link to="/superadmin/fees" className={navLinkClass('/superadmin/fees')} onClick={() => setSidebarOpen(false)}>Fee Entry</Link>
           <Link to="/admin/attendance" className={navLinkClass('/admin/attendance')} onClick={() => setSidebarOpen(false)}>Attendance</Link>
           <Link to="/admin/schedule" className={navLinkClass('/admin/schedule')} onClick={() => setSidebarOpen(false)}>Schedule</Link>
+          {/* <Link to="/superadmin/branches" className={navLinkClass('/superadmin/branches')} onClick={() => setSidebarOpen(false)}>Branches</Link> */}
           <Link to="/superadmin/branches" className={navLinkClass('/superadmin/branches')} onClick={() => setSidebarOpen(false)}>Branches</Link>
           <Link to="/superadmin/admins" className={navLinkClass('/superadmin/admins')} onClick={() => setSidebarOpen(false)}>Admins</Link>
           <Link to="/photos" className={navLinkClass('/photos')} onClick={() => setSidebarOpen(false)}>Photos</Link>
@@ -55,6 +56,7 @@ function MainLayout({ children }) {
           <Link to="/admin/students" className={navLinkClass('/admin/students')} onClick={() => setSidebarOpen(false)}>Students</Link>
           <Link to="/admin/attendance" className={navLinkClass('/admin/attendance')} onClick={() => setSidebarOpen(false)}>Attendance</Link>
           <Link to="/admin/schedule" className={navLinkClass('/admin/schedule')} onClick={() => setSidebarOpen(false)}>Schedule</Link>
+          <Link to="/admin/branches" className={navLinkClass('/admin/branches')} onClick={() => setSidebarOpen(false)}>Branches</Link>
           <Link to="/photos" className={navLinkClass('/photos')} onClick={() => setSidebarOpen(false)}>Photos</Link>
         </>
       ) : (

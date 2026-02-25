@@ -169,7 +169,7 @@ function SuperAdminDashboard() {
                   <div>
                     <p className="font-semibold text-sm">{req.branch?.name || `Branch ID: ${req.branch_id}`}</p>
                     <p className="text-xs text-gray-500 mt-0.5">📍 {req.branch?.location}</p>
-                    <p className="text-xs text-gray-400 mt-1">Requested by: {req.requested_by}</p>
+                    <p className="text-xs text-gray-400 mt-1">Requested by: {req.requester_name}</p>
                   </div>
                   <div className="flex gap-2 flex-shrink-0 items-center">
                     {showRejectInput[req.id] ? (
