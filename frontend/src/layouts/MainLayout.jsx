@@ -87,7 +87,7 @@ function MainLayout({ children }) {
         <div className="p-5 border-b border-gray-700">
           <div className="flex items-center gap-3 mb-4">
             <img
-              src="/src/assets/logo.png"
+              src="/logo.png"
               alt="Logo"
               className="w-9 h-9 rounded-lg object-cover"
               onError={e => e.target.style.display = 'none'}

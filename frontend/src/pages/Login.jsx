@@ -64,7 +64,7 @@ export default function Login() {
           <div className="left-top">
             <div className="logo-row">
               <img
-                src="/src/assets/logo.png"
+                src="/logo.png"
                 alt="Logo"
                 className="logo-img"
                 onError={e => {
