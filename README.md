@@ -337,7 +337,3 @@ Full interactive docs: `https://kodokan-india.up.railway.app/docs`
 4. Deploy — auto-deploys on every push to main
 
 ---
-
-## 📝 License
-
-MIT
