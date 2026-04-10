@@ -16,6 +16,7 @@ class AttendanceMarkRequest(BaseModel):
 
 class BulkAttendanceRequest(BaseModel):
     date: str
+    branch_id: int
     records: list[dict]  # [{"student_id": 1, "status": "present"}, ...]
 
 def validate_class_day(branch_id: int, date_str: str, db: Session):
@@ -40,15 +41,23 @@ BELT_ORDER = [
 
 @router.post("/mark")
 def mark_attendance(data: AttendanceMarkRequest, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
-    # Validate student belongs to admin's branch
+    branch_ids = get_admin_branch_ids(db, current_user)
+
+    # Validate student belongs to one of admin's branches
     student = db.query(Student).join(User).filter(
         Student.id == data.student_id,
-        User.branch_id == current_user.branch_id
+        User.branch_id.in_(branch_ids)
     ).first()
     if not student:
         raise HTTPException(status_code=404, detail="Student not found in your branch")
-    # Validate it's a class day
-    validate_class_day(current_user.branch_id, data.date, db)
+
+    # Get the student's actual branch_id for storing
+    student_user = db.query(User).filter(User.id == student.user_id).first()
+    student_branch_id = student_user.branch_id
+
+    # Validate it's a class day for that branch
+    validate_class_day(student_branch_id, data.date, db)
+
     # Check if already marked
     existing = db.query(Attendance).filter(
         Attendance.student_id == data.student_id,
@@ -59,9 +68,10 @@ def mark_attendance(data: AttendanceMarkRequest, db: Session = Depends(get_db), 
         existing.marked_by = current_user.id
         db.commit()
         return existing
+
     attendance = Attendance(
         student_id=data.student_id,
-        branch_id=current_user.branch_id,
+        branch_id=student_branch_id,  # use student's actual branch
         marked_by=current_user.id,
         date=data.date,
         status=data.status
@@ -73,16 +83,26 @@ def mark_attendance(data: AttendanceMarkRequest, db: Session = Depends(get_db), 
 
 @router.post("/mark-bulk")
 def mark_bulk_attendance(data: BulkAttendanceRequest, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
-    # Validate it's a class day first
-    validate_class_day(current_user.branch_id, data.date, db)
+    branch_ids = get_admin_branch_ids(db, current_user)
+
+    # Validate class day for the first branch in data
+    # since bulk mark is done per branch, get branch from first valid student
+    # or accept branch_id in request body
+    validate_class_day(data.branch_id, data.date, db)
+
     results = []
     for record in data.records:
         student = db.query(Student).join(User).filter(
             Student.id == record["student_id"],
-            User.branch_id == current_user.branch_id
+            User.branch_id.in_(branch_ids)
         ).first()
         if not student:
             continue
+
+        # Get student's actual branch
+        student_user = db.query(User).filter(User.id == student.user_id).first()
+        student_branch_id = student_user.branch_id
+
         existing = db.query(Attendance).filter(
             Attendance.student_id == record["student_id"],
             Attendance.date == data.date
@@ -93,12 +113,13 @@ def mark_bulk_attendance(data: BulkAttendanceRequest, db: Session = Depends(get_
         else:
             db.add(Attendance(
                 student_id=record["student_id"],
-                branch_id=current_user.branch_id,
+                branch_id=student_branch_id,  # student's actual branch
                 marked_by=current_user.id,
                 date=data.date,
                 status=record["status"]
             ))
         results.append(record["student_id"])
+
     db.commit()
     return {"message": f"Attendance marked for {len(results)} students"}
 
@@ -169,9 +190,10 @@ def get_student_attendance_summary(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin)
 ):
+    branch_ids = get_admin_branch_ids(db, current_user)
     student = db.query(Student).join(User).filter(
         Student.id == student_id,
-        User.branch_id == current_user.branch_id
+        User.branch_id.in_(branch_ids)
     ).first()
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
@@ -227,7 +249,7 @@ def get_attendance_history(
 
     # Get all class days for this branch in this month
     schedules = db.query(BranchSchedule).filter(
-        BranchSchedule.branch_id == current_user.branch_id
+        BranchSchedule.branch_id.in_(branch_ids)
     ).all()
     class_days = [s.day_of_week for s in schedules]
 
