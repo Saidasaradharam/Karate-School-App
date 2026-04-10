@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Float, Enum
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Float, Enum, JSON
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from database import Base
@@ -17,6 +17,35 @@ class FeeStatus(str, enum.Enum):
     rejected = "rejected"
 
 class RequestStatus(str, enum.Enum):
+    pending = "pending"
+    approved = "approved"
+    rejected = "rejected"
+
+class EventType(str, enum.Enum):
+    belt_test = "belt_test"
+    tournament = "tournament"
+    other = "other"
+
+class EventStatus(str, enum.Enum):
+    active = "active"
+    cancelled = "cancelled"
+    completed = "completed"
+
+class EventScope(str, enum.Enum):
+    all_branches = "all_branches"
+    specific_branches = "specific_branches"
+
+class EventFeeStatus(str, enum.Enum):
+    unpaid = "unpaid"
+    pending_approval = "pending_approval"
+    paid = "paid"
+    not_applicable = "not_applicable"
+
+class ResultType(str, enum.Enum):
+    pass_fail = "pass_fail"
+    prize = "prize"
+
+class BroadcastStatus(str, enum.Enum):
     pending = "pending"
     approved = "approved"
     rejected = "rejected"
@@ -220,3 +249,113 @@ class PromotionRequest(Base):
 
     student = relationship("Student", foreign_keys=[student_id])
     reviewer = relationship("User", foreign_keys=[reviewed_by])
+
+class Event(Base):
+    __tablename__ = "events"
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, nullable=False)
+    description = Column(String, nullable=True)
+    event_type = Column(Enum(EventType), nullable=False)
+    date = Column(String, nullable=False)
+    time = Column(String, nullable=True)
+    venue = Column(String, nullable=True)
+    eligible_belt_grades = Column(JSON, default=[])
+    registration_deadline = Column(String, nullable=True)
+    has_sub_events = Column(Boolean, default=False)
+    is_free = Column(Boolean, default=False)
+    scope = Column(Enum(EventScope), default=EventScope.specific_branches)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    status = Column(Enum(EventStatus), default=EventStatus.active)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    sub_events = relationship("EventSubEvent", back_populates="event", cascade="all, delete-orphan")
+    branches = relationship("EventBranch", back_populates="event", cascade="all, delete-orphan")
+    participants = relationship("EventParticipant", back_populates="event", cascade="all, delete-orphan")
+    broadcast_requests = relationship("EventBroadcastRequest", back_populates="event", cascade="all, delete-orphan")
+
+
+class EventSubEvent(Base):
+    __tablename__ = "event_sub_events"
+    id = Column(Integer, primary_key=True, index=True)
+    event_id = Column(Integer, ForeignKey("events.id"), nullable=False)
+    name = Column(String, nullable=False)
+    fee_amount = Column(Float, nullable=True)
+    description = Column(String, nullable=True)
+
+    event = relationship("Event", back_populates="sub_events")
+    participants = relationship("EventParticipant", back_populates="sub_event", cascade="all, delete-orphan")
+    results = relationship("EventResult", back_populates="sub_event")
+
+
+class EventBranch(Base):
+    __tablename__ = "event_branches"
+    id = Column(Integer, primary_key=True, index=True)
+    event_id = Column(Integer, ForeignKey("events.id"), nullable=False)
+    branch_id = Column(Integer, ForeignKey("branches.id"), nullable=False)
+
+    event = relationship("Event", back_populates="branches")
+    branch = relationship("Branch")
+
+
+class EventParticipant(Base):
+    __tablename__ = "event_participants"
+    id = Column(Integer, primary_key=True, index=True)
+    event_id = Column(Integer, ForeignKey("events.id"), nullable=False)
+    sub_event_id = Column(Integer, ForeignKey("event_sub_events.id"), nullable=False)
+    student_id = Column(Integer, ForeignKey("students.id"), nullable=False)
+    branch_id = Column(Integer, ForeignKey("branches.id"), nullable=False)
+    selected_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    fee_status = Column(Enum(EventFeeStatus), default=EventFeeStatus.unpaid)
+    fee_paid_at = Column(DateTime, nullable=True)
+    marked_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    event = relationship("Event", back_populates="participants")
+    sub_event = relationship("EventSubEvent", back_populates="participants")
+    student = relationship("Student")
+    branch = relationship("Branch")
+
+
+class EventPaymentRequest(Base):
+    __tablename__ = "event_payment_requests"
+    id = Column(Integer, primary_key=True, index=True)
+    event_id = Column(Integer, ForeignKey("events.id"), nullable=False)
+    sub_event_id = Column(Integer, ForeignKey("event_sub_events.id"), nullable=False)
+    student_id = Column(Integer, ForeignKey("students.id"), nullable=False)
+    proof_note = Column(String, nullable=True)
+    status = Column(String, default="pending") 
+    reviewed_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    event = relationship("Event")
+    sub_event = relationship("EventSubEvent")
+    student = relationship("Student")
+
+
+class EventResult(Base):
+    __tablename__ = "event_results"
+    id = Column(Integer, primary_key=True, index=True)
+    event_id = Column(Integer, ForeignKey("events.id"), nullable=False)
+    sub_event_id = Column(Integer, ForeignKey("event_sub_events.id"), nullable=True)
+    student_id = Column(Integer, ForeignKey("students.id"), nullable=False)
+    result_type = Column(Enum(ResultType), nullable=False)
+    result_value = Column(String, nullable=False)  # pass/fail/1st/2nd/3rd/participated
+    notes = Column(String, nullable=True)
+    recorded_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    event = relationship("Event")
+    sub_event = relationship("EventSubEvent", back_populates="results")
+    student = relationship("Student")
+
+
+class EventBroadcastRequest(Base):
+    __tablename__ = "event_broadcast_requests"
+    id = Column(Integer, primary_key=True, index=True)
+    event_id = Column(Integer, ForeignKey("events.id"), nullable=False)
+    requested_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    reason = Column(String, nullable=True)
+    status = Column(Enum(BroadcastStatus), default=BroadcastStatus.pending)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    event = relationship("Event", back_populates="broadcast_requests")
