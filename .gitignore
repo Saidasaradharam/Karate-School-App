@@ -32,3 +32,4 @@ backend/.env
 *.njsproj
 *.sln
 *.sw?
+.claude
