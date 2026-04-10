@@ -1,6 +1,8 @@
 import { createContext, useContext, useState } from 'react'
+import api from '../api/axios'
 
 const AuthContext = createContext(null)
+
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
@@ -9,6 +11,23 @@ export function AuthProvider({ children }) {
   })
 
   const [token, setToken] = useState(() => localStorage.getItem('token'))
+
+  const refreshUser = async () => {
+    try {
+        const res = await api.get('/auth/me')
+        const freshUser = {
+            role: res.data.role,
+            branch_id: res.data.branch_id,
+            full_name: res.data.full_name
+        }
+        setUser(freshUser)
+        localStorage.setItem('user', JSON.stringify(freshUser))
+        return freshUser
+    } catch (err) {
+        logout()
+        return null
+    }
+}
 
   function login(userData, accessToken) {
     setUser(userData)
@@ -25,7 +44,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout }}>
+    <AuthContext.Provider value={{ user, token, login, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   )

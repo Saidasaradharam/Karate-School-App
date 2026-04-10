@@ -5,10 +5,11 @@ import { useQuery } from '@tanstack/react-query'
 import api from '../api/axios'
 
 function MainLayout({ children }) {
-  const { user, logout } = useAuth()
+  const { user, logout, refreshUser } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
 
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin'
   const isSuperAdmin = user?.role === 'super_admin'
@@ -29,6 +30,41 @@ function MainLayout({ children }) {
     return location.pathname === path
   }
 
+  async function handleRefresh() {
+    setRefreshing(true)
+    const freshUser = await refreshUser()
+    setRefreshing(false)
+    if (!freshUser) return
+    if (freshUser.role === 'super_admin') navigate('/superadmin/dashboard')
+    else if (freshUser.role === 'admin') navigate('/admin/dashboard')
+    else navigate('/dashboard')
+    window.location.reload()
+  }
+
+  const RefreshBtn = () => (
+    <button
+      onClick={handleRefresh}
+      disabled={refreshing}
+      className="relative p-2 text-gray-300 hover:text-white transition-colors"
+      title="Refresh"
+    >
+      <span className={`text-lg ${refreshing ? 'animate-spin inline-block' : ''}`}>
+        🔄
+      </span>
+    </button>
+  )
+
+  const NotificationBell = ({ onClick }) => (
+    <Link to="/notifications" className="relative p-2" onClick={onClick}>
+      <span className="text-xl">🔔</span>
+      {unreadCount > 0 && (
+        <span className="absolute top-1 right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+          {unreadCount}
+        </span>
+      )}
+    </Link>
+  )
+
   const navLinkClass = (path) =>
     `block px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
       isActive(path)
@@ -45,7 +81,6 @@ function MainLayout({ children }) {
           <Link to="/superadmin/fees" className={navLinkClass('/superadmin/fees')} onClick={() => setSidebarOpen(false)}>Fee Entry</Link>
           <Link to="/admin/attendance" className={navLinkClass('/admin/attendance')} onClick={() => setSidebarOpen(false)}>Attendance</Link>
           <Link to="/admin/schedule" className={navLinkClass('/admin/schedule')} onClick={() => setSidebarOpen(false)}>Schedule</Link>
-          {/* <Link to="/superadmin/branches" className={navLinkClass('/superadmin/branches')} onClick={() => setSidebarOpen(false)}>Branches</Link> */}
           <Link to="/superadmin/branches" className={navLinkClass('/superadmin/branches')} onClick={() => setSidebarOpen(false)}>Branches</Link>
           <Link to="/superadmin/admins" className={navLinkClass('/superadmin/admins')} onClick={() => setSidebarOpen(false)}>Admins</Link>
           <Link to="/photos" className={navLinkClass('/photos')} onClick={() => setSidebarOpen(false)}>Photos</Link>
@@ -99,14 +134,10 @@ function MainLayout({ children }) {
               <p className="text-sm font-semibold text-white">{user?.full_name || 'User'}</p>
               <p className="text-xs text-gray-400 capitalize mt-0.5">{user?.role?.replace('_', ' ')}</p>
             </div>
-            <Link to="/notifications" className="relative p-2">
-              <span className="text-xl">🔔</span>
-              {unreadCount > 0 && (
-                <span className="absolute top-1 right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-                  {unreadCount}
-                </span>
-              )}
-            </Link>
+            <div className="flex items-center gap-1">
+              <RefreshBtn />
+              <NotificationBell />
+            </div>
           </div>
         </div>
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
@@ -130,7 +161,7 @@ function MainLayout({ children }) {
         <div className="p-5 border-b border-gray-700">
           <div className="flex items-center gap-3 mb-4">
             <img
-              src="/src/assets/logo.png"
+              src="/logo.png"
               alt="Logo"
               className="w-9 h-9 rounded-lg object-cover"
               onError={e => e.target.style.display = 'none'}
@@ -142,14 +173,10 @@ function MainLayout({ children }) {
               <p className="text-sm font-semibold text-white">{user?.full_name || 'User'}</p>
               <p className="text-xs text-gray-400 capitalize mt-0.5">{user?.role?.replace('_', ' ')}</p>
             </div>
-            <Link to="/notifications" className="relative p-2" onClick={() => setSidebarOpen(false)}>
-              <span className="text-xl">🔔</span>
-              {unreadCount > 0 && (
-                <span className="absolute top-1 right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-                  {unreadCount}
-                </span>
-              )}
-            </Link>
+            <div className="flex items-center gap-1">
+              <RefreshBtn />
+              <NotificationBell onClick={() => setSidebarOpen(false)} />
+            </div>
           </div>
         </div>
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
@@ -178,14 +205,10 @@ function MainLayout({ children }) {
             <div className="w-5 h-0.5 bg-white" />
           </button>
           <span className="font-bold">Kodokan India</span>
-          <Link to="/notifications" className="relative p-2">
-            <span className="text-xl">🔔</span>
-            {unreadCount > 0 && (
-              <span className="absolute top-1 right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-                {unreadCount}
-              </span>
-            )}
-          </Link>
+          <div className="flex items-center gap-1">
+            <RefreshBtn />
+            <NotificationBell />
+          </div>
         </header>
 
         <main className="flex-1 p-4 md:p-8 overflow-auto">
