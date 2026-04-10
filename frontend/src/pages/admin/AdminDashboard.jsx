@@ -8,17 +8,16 @@ import { useToast } from '../../hooks/useToast'
 import api from '../../api/axios'
 import TableWrapper from '../../components/TableWrapper'
 
-
 function AdminDashboard() {
   const queryClient = useQueryClient()
   const { toasts, showToast } = useToast()
   const [showManualEntry, setShowManualEntry] = useState(false)
   const [search, setSearch] = useState('')
-  const [filterBelt, setFilterBelt] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1)
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
-  
+  const [selectedBranch, setSelectedBranch] = useState(null)
+
   const [showBranchRequest, setShowBranchRequest] = useState(false)
   const [branchRequestData, setBranchRequestData] = useState({ name: '', location: '', reason: '' })
 
@@ -47,6 +46,11 @@ function AdminDashboard() {
     queryFn: () => api.get('/students/').then(res => res.data)
   })
 
+  const { data: myBranches } = useQuery({
+    queryKey: ['my-branches'],
+    queryFn: () => api.get('/branches/my-branches').then(res => res.data)
+  })
+
   const { data: pendingRequests } = useQuery({
     queryKey: ['pending-requests'],
     queryFn: () => api.get('/payments/offline/pending').then(res => res.data)
@@ -55,7 +59,6 @@ function AdminDashboard() {
   const approveRequest = useMutation({
     mutationFn: (id) => api.patch(`/payments/offline/${id}/approve`),
     onMutate: async (id) => {
-      // Optimistic update
       await queryClient.cancelQueries(['pending-requests'])
       const prev = queryClient.getQueryData(['pending-requests'])
       queryClient.setQueryData(['pending-requests'], old => old?.filter(r => r.id !== id))
@@ -86,11 +89,16 @@ function AdminDashboard() {
       showToast(err.response?.data?.detail || 'Failed to reject', 'error')
     }
   })
-  // Filter logic
+
   const filteredOverview = overview?.filter(s => {
     const matchName = s.full_name.toLowerCase().includes(search.toLowerCase())
-    const matchStatus = filterStatus ? s.status === filterStatus : true
-    return matchName && matchStatus
+    const matchStatus = filterStatus
+      ? filterStatus === 'paid'
+        ? s.status === 'paid_online' || s.status === 'paid_offline'
+        : s.status === filterStatus
+      : true
+    const matchBranch = selectedBranch ? s.branch_id === selectedBranch : true
+    return matchName && matchStatus && matchBranch
   })
 
   return (
@@ -112,8 +120,44 @@ function AdminDashboard() {
         ))}
       </div>
 
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex gap-3"></div>
+      {/* Branch Filter + Student Count + Request Button */}
+      <div className="flex justify-between items-center mb-6 flex-wrap gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          {myBranches?.length > 1 ? (
+            <div className="flex gap-2 flex-wrap">
+              <button
+                onClick={() => setSelectedBranch(null)}
+                className={`px-3 py-1.5 rounded-xl text-sm font-semibold border transition-colors ${
+                  selectedBranch === null
+                    ? 'bg-gray-900 text-white border-gray-900'
+                    : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                }`}
+              >
+                All Branches
+              </button>
+              {myBranches.map(b => (
+                <button
+                  key={b.id}
+                  onClick={() => setSelectedBranch(b.id)}
+                  className={`px-3 py-1.5 rounded-xl text-sm font-semibold border transition-colors ${
+                    selectedBranch === b.id
+                      ? 'bg-gray-900 text-white border-gray-900'
+                      : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                  }`}
+                >
+                  {b.name}
+                  <span className="ml-1.5 text-xs opacity-70">
+                    {students?.filter(s => s.branch_id === b.id).length || 0} students
+                  </span>
+                </button>
+              ))}
+            </div>
+          ) : myBranches?.length === 1 ? (
+            <p className="text-sm text-gray-500">
+              <span className="font-semibold text-gray-800">{students?.length || 0}</span> students in {myBranches[0].name}
+            </p>
+          ) : null}
+        </div>
         <button
           onClick={() => setShowBranchRequest(true)}
           className="border border-gray-300 text-gray-700 px-4 py-2 rounded-xl text-sm font-semibold hover:bg-gray-50"
@@ -121,7 +165,7 @@ function AdminDashboard() {
           + Request New Branch
         </button>
       </div>
-      
+
       {/* Fee Overview Table */}
       <div className="bg-white rounded-lg shadow mb-8">
         <div className="p-4 border-b flex flex-wrap gap-3 justify-between items-center">
@@ -133,7 +177,6 @@ function AdminDashboard() {
               onChange={e => setSearch(e.target.value)}
               className="border rounded px-3 py-1.5 text-sm"
             />
-
             <select value={selectedMonth} onChange={e => setSelectedMonth(parseInt(e.target.value))} className="border rounded px-3 py-1.5 text-sm">
               {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((m, i) => (
                 <option key={i} value={i+1}>{m}</option>
@@ -147,8 +190,9 @@ function AdminDashboard() {
             />
             <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="border rounded px-3 py-1.5 text-sm">
               <option value="">All statuses</option>
-              <option value="paid_online">Paid Online</option>
-              <option value="paid_offline">Paid Offline</option>
+              <option value="paid">Paid</option>
+              <option value="paid_online">Paid — Online</option>
+              <option value="paid_offline">Paid — Offline</option>
               <option value="pending">Pending</option>
               <option value="rejected">Rejected</option>
               <option value="no_record">No Record</option>
@@ -171,7 +215,8 @@ function AdminDashboard() {
             </thead>
             <tbody>
               {filteredOverview?.length === 0 ? (
-                <tr><td colSpan="5" className="text-center py-8 text-gray-500">No records found</td></tr>            ) : (
+                <tr><td colSpan="5" className="text-center py-8 text-gray-500">No records found</td></tr>
+              ) : (
                 filteredOverview?.map(s => (
                   <tr key={s.student_id} className="border-b hover:bg-gray-50">
                     <td className="px-6 py-4 font-medium">{s.full_name}</td>
@@ -187,6 +232,7 @@ function AdminDashboard() {
         </TableWrapper>
       </div>
 
+      {/* Branch Request Modal */}
       {showBranchRequest && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md mx-4">
@@ -279,4 +325,5 @@ function AdminDashboard() {
     </MainLayout>
   )
 }
+
 export default AdminDashboard

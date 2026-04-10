@@ -13,6 +13,8 @@ function SuperAdminDashboard() {
   const [showRejectInput, setShowRejectInput] = useState({})
   const [showPromotionRequests, setShowPromotionRequests] = useState(false)
   const [showBranchRequests, setShowBranchRequests] = useState(false)
+  const [selectedBranch, setSelectedBranch] = useState(null)
+
   const { data: promotionRequests } = useQuery({
     queryKey: ['promotion-requests'],
     queryFn: () => api.get('/admins/promotion-requests').then(res => res.data)
@@ -68,6 +70,10 @@ function SuperAdminDashboard() {
   const totalStudents = branchesOverview?.reduce((sum, b) => sum + b.student_count, 0) || 0
   const totalAdmins = branchesOverview?.reduce((sum, b) => sum + b.admin_count, 0) || 0
   const totalBranches = branchesOverview?.length || 0
+
+  const filteredBranches = selectedBranch
+    ? branchesOverview?.filter(b => b.id === selectedBranch)
+    : branchesOverview
 
   return (
     <MainLayout>
@@ -219,8 +225,37 @@ function SuperAdminDashboard() {
 
       {/* Per Branch Student Summary */}
       <div className="bg-white rounded-lg shadow mb-8">
-        <div className="p-4 border-b">
+        <div className="p-4 border-b flex justify-between items-center flex-wrap gap-3">
           <h3 className="font-semibold">Students Per Branch</h3>
+          {/* Branch filter buttons */}
+          {branchesOverview?.length > 1 && (
+            <div className="flex gap-2 flex-wrap">
+              <button
+                onClick={() => setSelectedBranch(null)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-colors ${
+                  selectedBranch === null
+                    ? 'bg-gray-900 text-white border-gray-900'
+                    : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                }`}
+              >
+                All
+              </button>
+              {branchesOverview.map(b => (
+                <button
+                  key={b.id}
+                  onClick={() => setSelectedBranch(b.id)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-colors ${
+                    selectedBranch === b.id
+                      ? 'bg-gray-900 text-white border-gray-900'
+                      : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                  }`}
+                >
+                  {b.name}
+                  <span className="ml-1.5 opacity-70">{b.student_count} students</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         <TableWrapper>
           <table className="w-full">
@@ -237,17 +272,20 @@ function SuperAdminDashboard() {
             <tbody>
               {branchesLoading ? (
                 <tr><td colSpan="6" className="text-center py-8 text-gray-500">Loading...</td></tr>
-              ) : branchesOverview?.length === 0 ? (
+              ) : filteredBranches?.length === 0 ? (
                 <tr><td colSpan="6" className="text-center py-8 text-gray-500">No branches found</td></tr>
               ) : (
-                branchesOverview?.map(branch => (
+                filteredBranches?.map(branch => (
                   <tr key={branch.id} className="border-b hover:bg-gray-50">
                     <td className="px-6 py-4 font-medium">{branch.name}</td>
                     <td className="px-6 py-4 text-gray-500">{branch.location}</td>
-                    <td className="px-6 py-4">{branch.student_count}</td>
+                    <td className="px-6 py-4">
+                      <span className="font-semibold text-gray-900">{branch.student_count}</span>
+                      <span className="text-xs text-gray-400 ml-1">students</span>
+                    </td>
                     <td className="px-6 py-4">{branch.admin_count}</td>
                     <td className="px-6 py-4 text-sm text-gray-500">
-                      {branch.admins.length > 0
+                      {branch.admins?.length > 0
                         ? branch.admins.map(a => a.email).join(', ')
                         : '—'}
                     </td>
