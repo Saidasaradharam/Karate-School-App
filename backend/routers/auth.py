@@ -99,3 +99,14 @@ def login(request: Request, data: LoginRequest, db: Session = Depends(get_db)):
         "role": user.role.value,
         "branch_id": user.branch_id
     }
+
+@router.get("/me")
+def get_me(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    student = db.query(Student).filter(Student.user_id == current_user.id).first()
+    return {
+        "id": current_user.id,
+        "email": current_user.email,
+        "role": current_user.role,
+        "branch_id": current_user.branch_id,
+        "full_name": student.full_name if student else current_user.email.split("@")[0]
+    }
