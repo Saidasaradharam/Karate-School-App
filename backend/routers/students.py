@@ -84,31 +84,30 @@ def update_my_profile(data: StudentUpdate, db: Session = Depends(get_db), curren
     return student
 
 @router.get("/")
-def get_students(skip: int = 0, limit: int = 20, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
-    if current_user.role == UserRole.super_admin:
-        students = db.query(Student, User.branch_id).join(User).filter(
-            User.role == UserRole.student
-        ).offset(skip).limit(limit).all()
-        return [
-            {**s.__dict__, "branch_id": branch_id}
-            for s, branch_id in students
-        ]
-    else:
-        branch_ids = get_admin_branch_ids(db, current_user)
-        students = db.query(Student).join(User).filter(
-            User.branch_id.in_(branch_ids),
-            User.role == UserRole.student
-        ).offset(skip).limit(limit).all()
-        return students 
+def get_students(
+    branch_id: Optional[int] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
+):
+    branch_ids = get_admin_branch_ids(db, current_user)
+    if branch_id:
+        if branch_id not in branch_ids and current_user.role != UserRole.super_admin:
+            raise HTTPException(status_code=403, detail="Access denied")
+        branch_ids = [branch_id]
+    students = db.query(Student).join(User).filter(
+        User.branch_id.in_(branch_ids),
+        User.role == UserRole.student
+    ).all()
+    return students
 
 @router.get("/{student_id}")
 def get_student(student_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     student = db.query(Student).filter(Student.id == student_id).first()
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
-    # Branch isolation — admin can only see their branch
     if current_user.role == UserRole.admin:
-        if student.user.branch_id != current_user.branch_id:
+        branch_ids = get_admin_branch_ids(db, current_user)
+        if student.user.branch_id not in branch_ids:
             raise HTTPException(status_code=403, detail="Access denied")
     return student
 
