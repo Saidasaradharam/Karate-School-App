@@ -14,6 +14,15 @@ const STATUS_STYLES = {
   not_marked: 'bg-gray-100 text-gray-500'
 }
 
+function extractErrorMessage(err) {
+  const detail = err?.response?.data?.detail
+  if (!detail) return 'Something went wrong'
+  if (typeof detail === 'string') return detail
+  if (Array.isArray(detail)) return detail.map(d => d.msg || String(d)).join(', ')
+  if (typeof detail === 'object') return detail.msg || JSON.stringify(detail)
+  return String(detail)
+}
+
 function AdminAttendance() {
   const queryClient = useQueryClient()
   const { toasts, showToast } = useToast()
@@ -23,23 +32,31 @@ function AdminAttendance() {
   const [attendanceMap, setAttendanceMap] = useState({})
   const [viewMonth, setViewMonth] = useState(new Date().getMonth() + 1)
   const [viewYear, setViewYear] = useState(new Date().getFullYear())
+  const [scheduleError, setScheduleError] = useState(null)
 
   // Mark mode query
-  const { data: attendanceList, isLoading, error } = useQuery({
+  const { data: attendanceList, isLoading } = useQuery({
     queryKey: ['branch-attendance', selectedDate, selectedBranch],
     queryFn: () => {
       const params = new URLSearchParams({ date: selectedDate })
       if (selectedBranch) params.append('branch_id', selectedBranch)
-      return api.get(`/attendance/branch?${params}`).then(res => {
-        const map = {}
-        res.data.forEach(s => {
-          map[s.student_id] = s.status === 'not_marked' ? 'present' : s.status
+      return api.get(`/attendance/branch?${params}`)
+        .then(res => {
+          setScheduleError(null)
+          const map = {}
+          res.data.forEach(s => {
+            map[s.student_id] = s.status === 'not_marked' ? 'present' : s.status
+          })
+          setAttendanceMap(map)
+          return res.data
         })
-        setAttendanceMap(map)
-        return res.data
-      })
+        .catch(err => {
+          setScheduleError(extractErrorMessage(err))
+          throw err
+        })
     },
-    enabled: mode === 'mark'
+    enabled: mode === 'mark',
+    retry: false
   })
 
   // View mode query
@@ -69,7 +86,7 @@ function AdminAttendance() {
       showToast('Attendance saved successfully')
       queryClient.invalidateQueries(['branch-attendance'])
     },
-    onError: (err) => showToast(err.response?.data?.detail || 'Failed to save', 'error')
+    onError: (err) => showToast(extractErrorMessage(err), 'error')
   })
 
   return (
@@ -101,69 +118,75 @@ function AdminAttendance() {
       {/* MARK MODE */}
       {mode === 'mark' && (
         <>
-          <div className="flex gap-3 items-center mb-6">
+          <div className="flex gap-3 items-center mb-4">
             <input
               type="date"
               value={selectedDate}
               max={new Date().toISOString().split('T')[0]}
-              onChange={e => setSelectedDate(e.target.value)}
+              onChange={e => {
+                setSelectedDate(e.target.value)
+                setScheduleError(null)
+              }}
               className="border rounded px-3 py-2"
             />
             <button
               onClick={() => markBulk.mutate()}
-              disabled={markBulk.isPending}
+              disabled={markBulk.isPending || !!scheduleError}
               className="bg-gray-900 text-white px-4 py-2 rounded hover:bg-gray-700 disabled:opacity-50"
             >
               {markBulk.isPending ? 'Saving...' : 'Save Attendance'}
             </button>
           </div>
 
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 rounded p-4 mb-4">
-              {error.response?.data?.detail || 'No class scheduled on this day'}
+          {scheduleError && (
+            <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 mb-4 flex items-center gap-2">
+              <span>⚠️</span>
+              <span>{scheduleError}</span>
             </div>
           )}
 
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b">
-                <tr>
-                  <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Student</th>
-                  <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {isLoading ? (
-                  <tr><td colSpan="2" className="text-center py-8 text-gray-500">Loading...</td></tr>
-                ) : attendanceList?.length === 0 ? (
-                  <tr><td colSpan="2" className="text-center py-8 text-gray-500">No students found</td></tr>
-                ) : (
-                  attendanceList?.map(s => (
-                    <tr key={s.student_id} className="border-b hover:bg-gray-50">
-                      <td className="px-6 py-4 font-medium">{s.full_name}</td>
-                      <td className="px-6 py-4">
-                        <div className="flex gap-2">
-                          {STATUS_OPTIONS.map(status => (
-                            <button
-                              key={status}
-                              onClick={() => setAttendanceMap(prev => ({...prev, [s.student_id]: status}))}
-                              className={`px-3 py-1 rounded-full text-xs font-semibold capitalize transition-all ${
-                                attendanceMap[s.student_id] === status
-                                  ? STATUS_STYLES[status]
-                                  : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
-                              }`}
-                            >
-                              {status.replace('_', ' ')}
-                            </button>
-                          ))}
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+          {!scheduleError && (
+            <div className="bg-white rounded-lg shadow overflow-hidden">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b">
+                  <tr>
+                    <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Student</th>
+                    <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {isLoading ? (
+                    <tr><td colSpan="2" className="text-center py-8 text-gray-500">Loading...</td></tr>
+                  ) : attendanceList?.length === 0 ? (
+                    <tr><td colSpan="2" className="text-center py-8 text-gray-500">No students found</td></tr>
+                  ) : (
+                    attendanceList?.map(s => (
+                      <tr key={s.student_id} className="border-b hover:bg-gray-50">
+                        <td className="px-6 py-4 font-medium">{s.full_name}</td>
+                        <td className="px-6 py-4">
+                          <div className="flex gap-2">
+                            {STATUS_OPTIONS.map(status => (
+                              <button
+                                key={status}
+                                onClick={() => setAttendanceMap(prev => ({...prev, [s.student_id]: status}))}
+                                className={`px-3 py-1 rounded-full text-xs font-semibold capitalize transition-all ${
+                                  attendanceMap[s.student_id] === status
+                                    ? STATUS_STYLES[status]
+                                    : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+                                }`}
+                              >
+                                {status.replace('_', ' ')}
+                              </button>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
         </>
       )}
 
