@@ -60,19 +60,15 @@ def approve_branch(id: int, db: Session = Depends(get_db), current_user: User = 
     req = db.query(BranchRequest).filter(BranchRequest.id == id).first()
     if not req:
         raise HTTPException(status_code=404, detail="Request not found")
-    
-    # Activate the branch
+
     req.status = RequestStatus.approved
     req.branch.is_active = True
 
-    # Assign the requester to this branch
     requester = db.query(User).filter(User.id == req.requested_by).first()
     if requester:
-        # Set as primary branch if they don't have one
         if not requester.branch_id:
             requester.branch_id = req.branch_id
 
-        # Add to admin_branches if not already there
         existing = db.query(AdminBranch).filter(
             AdminBranch.admin_id == req.requested_by,
             AdminBranch.branch_id == req.branch_id
@@ -80,7 +76,6 @@ def approve_branch(id: int, db: Session = Depends(get_db), current_user: User = 
         if not existing:
             db.add(AdminBranch(admin_id=req.requested_by, branch_id=req.branch_id))
 
-        # Notify the requester
         notify_user(
             db,
             user_id=req.requested_by,
@@ -99,10 +94,8 @@ def reject_branch(id: int, db: Session = Depends(get_db), current_user: User = D
     if not req:
         raise HTTPException(status_code=404, detail="Request not found")
 
-    # Capture name BEFORE deleting
     branch_name = req.branch.name if req.branch else "Unknown"
 
-    # Notify the requester
     if req.requested_by:
         notify_user(
             db,
@@ -113,19 +106,15 @@ def reject_branch(id: int, db: Session = Depends(get_db), current_user: User = D
             push_url="/admin/branches"
         )
 
-    # Update status
     req.status = RequestStatus.rejected
 
-    # Delete the branch from branches table
     branch = db.query(Branch).filter(Branch.id == req.branch_id).first()
     if branch:
         db.query(BranchSchedule).filter(BranchSchedule.branch_id == branch.id).delete()
         db.query(AdminBranch).filter(AdminBranch.branch_id == branch.id).delete()
         db.delete(branch)
 
-    # Nullify branch_id after deletion
     req.branch_id = None
-
     db.commit()
     return {"message": "Branch request rejected and branch removed"}
 
@@ -176,33 +165,40 @@ def get_branches_overview(db: Session = Depends(get_db), current_user: User = De
         })
     return result
 
-
 @router.get("/my-schedule")
-def get_my_schedule(db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
+def get_my_schedule(
+    branch_id: Optional[int] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
+):
     branch_ids = get_admin_branch_ids(db, current_user)
+    # Use provided branch_id if it's in admin's allowed branches, else use first branch
+    target_branch = branch_id if (branch_id and branch_id in branch_ids) else (branch_ids[0] if branch_ids else None)
+    if not target_branch:
+        return []
     schedules = db.query(BranchSchedule).filter(
-        BranchSchedule.branch_id.in_(branch_ids)
+        BranchSchedule.branch_id == target_branch
     ).all()
     return [s.day_of_week for s in schedules]
 
 @router.put("/my-schedule")
 def update_my_schedule(
     data: ScheduleUpdate,
+    branch_id: Optional[int] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin)
 ):
-    # Delete existing schedule
-    db.query(BranchSchedule).filter(
-        BranchSchedule.branch_id == current_user.branch_id
-    ).delete()
-    # Insert new schedule
+    branch_ids = get_admin_branch_ids(db, current_user)
+    # Use provided branch_id if it's in admin's allowed branches, else use first branch
+    target_branch = branch_id if (branch_id and branch_id in branch_ids) else (branch_ids[0] if branch_ids else None)
+    if not target_branch:
+        raise HTTPException(status_code=400, detail="No branch assigned to your account")
+
+    db.query(BranchSchedule).filter(BranchSchedule.branch_id == target_branch).delete()
     for day in data.days:
         if day < 0 or day > 6:
             raise HTTPException(status_code=400, detail=f"Invalid day: {day}")
-        db.add(BranchSchedule(
-            branch_id=current_user.branch_id,
-            day_of_week=day
-        ))
+        db.add(BranchSchedule(branch_id=target_branch, day_of_week=day))
     db.commit()
     return {"message": "Schedule updated", "days": data.days}
 
@@ -231,9 +227,8 @@ def update_branch(
     branch = db.query(Branch).filter(Branch.id == id).first()
     if not branch:
         raise HTTPException(status_code=404, detail="Branch not found")
-    
+
     if current_user.role == UserRole.admin:
-        from auth.dependencies import get_admin_branch_ids
         allowed = get_admin_branch_ids(db, current_user)
         if id not in allowed:
             raise HTTPException(status_code=403, detail="Access denied to this branch")
@@ -248,16 +243,13 @@ def get_my_branches(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin)
 ):
-    from models.models import AdminBranch
     if current_user.role == UserRole.super_admin:
         branches = db.query(Branch).filter(Branch.is_active == True).all()
         return branches
-    # Get all branches assigned to this admin
     admin_branches = db.query(AdminBranch).filter(
         AdminBranch.admin_id == current_user.id
     ).all()
     branch_ids = [ab.branch_id for ab in admin_branches]
-    # Fallback to primary branch_id
     if not branch_ids and current_user.branch_id:
         branch_ids = [current_user.branch_id]
     branches = db.query(Branch).filter(Branch.id.in_(branch_ids)).all()
@@ -273,20 +265,14 @@ def delete_branch(
     if not branch:
         raise HTTPException(status_code=404, detail="Branch not found")
 
-    # Admin can only delete branches they belong to
     if current_user.role == UserRole.admin:
-        from auth.dependencies import get_admin_branch_ids
         allowed = get_admin_branch_ids(db, current_user)
         if id not in allowed:
             raise HTTPException(status_code=403, detail="Access denied to this branch")
 
-    # Clean up related records first
     db.query(BranchSchedule).filter(BranchSchedule.branch_id == id).delete()
     db.query(AdminBranch).filter(AdminBranch.branch_id == id).delete()
-
-    # Unassign users from this branch
     db.query(User).filter(User.branch_id == id).update({"branch_id": None})
-
     db.delete(branch)
     db.commit()
     return {"message": "Branch deleted"}
