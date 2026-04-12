@@ -31,19 +31,18 @@ def validate_class_day(branch_id: int, date_str: str, db: Session):
             status_code=400,
             detail=f"No class scheduled on {date.strftime('%A')} for this branch"
         )
-    
+
 BELT_ORDER = [
     "white", "yellow", "blue", "orange", "purple", "purple-1",
     "green", "green-1", "brown", "brown-1", "black-1", "black-2",
     "black-3", "black-4", "black-5", "black-6", "black-7", "black-8",
     "black-9", "black-10"
-]        
+]
 
 @router.post("/mark")
 def mark_attendance(data: AttendanceMarkRequest, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     branch_ids = get_admin_branch_ids(db, current_user)
 
-    # Validate student belongs to one of admin's branches
     student = db.query(Student).join(User).filter(
         Student.id == data.student_id,
         User.branch_id.in_(branch_ids)
@@ -51,14 +50,11 @@ def mark_attendance(data: AttendanceMarkRequest, db: Session = Depends(get_db), 
     if not student:
         raise HTTPException(status_code=404, detail="Student not found in your branch")
 
-    # Get the student's actual branch_id for storing
     student_user = db.query(User).filter(User.id == student.user_id).first()
     student_branch_id = student_user.branch_id
 
-    # Validate it's a class day for that branch
     validate_class_day(student_branch_id, data.date, db)
 
-    # Check if already marked
     existing = db.query(Attendance).filter(
         Attendance.student_id == data.student_id,
         Attendance.date == data.date
@@ -71,7 +67,7 @@ def mark_attendance(data: AttendanceMarkRequest, db: Session = Depends(get_db), 
 
     attendance = Attendance(
         student_id=data.student_id,
-        branch_id=student_branch_id,  # use student's actual branch
+        branch_id=student_branch_id,
         marked_by=current_user.id,
         date=data.date,
         status=data.status
@@ -85,9 +81,6 @@ def mark_attendance(data: AttendanceMarkRequest, db: Session = Depends(get_db), 
 def mark_bulk_attendance(data: BulkAttendanceRequest, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     branch_ids = get_admin_branch_ids(db, current_user)
 
-    # Validate class day for the first branch in data
-    # since bulk mark is done per branch, get branch from first valid student
-    # or accept branch_id in request body
     validate_class_day(data.branch_id, data.date, db)
 
     results = []
@@ -99,7 +92,6 @@ def mark_bulk_attendance(data: BulkAttendanceRequest, db: Session = Depends(get_
         if not student:
             continue
 
-        # Get student's actual branch
         student_user = db.query(User).filter(User.id == student.user_id).first()
         student_branch_id = student_user.branch_id
 
@@ -113,7 +105,7 @@ def mark_bulk_attendance(data: BulkAttendanceRequest, db: Session = Depends(get_
         else:
             db.add(Attendance(
                 student_id=record["student_id"],
-                branch_id=student_branch_id,  # student's actual branch
+                branch_id=student_branch_id,
                 marked_by=current_user.id,
                 date=data.date,
                 status=record["status"]
@@ -127,7 +119,7 @@ def mark_bulk_attendance(data: BulkAttendanceRequest, db: Session = Depends(get_
 def get_branch_attendance(
     date: Optional[str] = None,
     db: Session = Depends(get_db),
-    branch_id: Optional[int] = None,  
+    branch_id: Optional[int] = None,
     current_user: User = Depends(require_admin)
 ):
     branch_ids = get_admin_branch_ids(db, current_user)
@@ -141,14 +133,15 @@ def get_branch_attendance(
         User.branch_id.in_(branch_ids),
         User.role == UserRole.student
     ).all()
-    
-    # Sort by belt grade in reverse order (black-10 first, white last)
+
     students.sort(
         key=lambda s: BELT_ORDER.index(s.belt_grade) if s.belt_grade in BELT_ORDER else -1,
         reverse=True
     )
+
     result = []
     for student in students:
+        student_user = db.query(User).filter(User.id == student.user_id).first()
         record = db.query(Attendance).filter(
             Attendance.student_id == student.id,
             Attendance.date == date
@@ -156,8 +149,10 @@ def get_branch_attendance(
         result.append({
             "student_id": student.id,
             "full_name": student.full_name,
+            "belt_grade": student.belt_grade,
             "date": date,
-            "status": record.status if record else "not_marked"
+            "status": record.status if record else "not_marked",
+            "branch_id": student_user.branch_id if student_user else None
         })
     return result
 
@@ -174,7 +169,6 @@ def get_my_attendance(
     now = datetime.utcnow()
     month = month or now.month
     year = year or now.year
-    # Filter by month/year using string prefix
     month_str = f"{year}-{str(month).zfill(2)}"
     records = db.query(Attendance).filter(
         Attendance.student_id == student.id,
@@ -236,24 +230,22 @@ def get_attendance_history(
         if branch_id not in branch_ids and current_user.role != UserRole.super_admin:
             raise HTTPException(status_code=403, detail="Access denied to this branch")
         branch_ids = [branch_id]
+
     students = db.query(Student).join(User).filter(
         User.branch_id.in_(branch_ids),
         User.role == UserRole.student
     ).all()
-    
-    # Sort reverse belt order — black-10 first, white last
+
     students.sort(
         key=lambda s: BELT_ORDER.index(s.belt_grade) if s.belt_grade in BELT_ORDER else -1,
         reverse=True
     )
 
-    # Get all class days for this branch in this month
     schedules = db.query(BranchSchedule).filter(
         BranchSchedule.branch_id.in_(branch_ids)
     ).all()
     class_days = [s.day_of_week for s in schedules]
 
-    # Get all dates in this month that are class days
     import calendar
     num_days = calendar.monthrange(year, month)[1]
     valid_dates = [
@@ -281,10 +273,10 @@ def get_attendance_history(
             "total_classes": len(valid_dates),
             "records": [
                 {
-                    "date": date,
-                    "status": record_map.get(date, "not_marked")
+                    "date": d,
+                    "status": record_map.get(d, "not_marked")
                 }
-                for date in valid_dates
+                for d in valid_dates
             ]
         })
     return result
