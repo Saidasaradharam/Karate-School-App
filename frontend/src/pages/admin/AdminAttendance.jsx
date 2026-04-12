@@ -17,7 +17,7 @@ const STATUS_STYLES = {
 function AdminAttendance() {
   const queryClient = useQueryClient()
   const { toasts, showToast } = useToast()
-  const [mode, setMode] = useState('mark')  // 'mark' or 'view'
+  const [mode, setMode] = useState('mark')
   const [selectedBranch, setSelectedBranch] = useState(null)
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
   const [attendanceMap, setAttendanceMap] = useState({})
@@ -26,7 +26,7 @@ function AdminAttendance() {
 
   // Mark mode query
   const { data: attendanceList, isLoading, error } = useQuery({
-    queryKey: ['branch-attendance', selectedDate, selectedBranch],  // add selectedBranch
+    queryKey: ['branch-attendance', selectedDate, selectedBranch],
     queryFn: () => {
       const params = new URLSearchParams({ date: selectedDate })
       if (selectedBranch) params.append('branch_id', selectedBranch)
@@ -44,7 +44,7 @@ function AdminAttendance() {
 
   // View mode query
   const { data: historyData, isLoading: historyLoading } = useQuery({
-    queryKey: ['attendance-history', viewMonth, viewYear, selectedBranch],  // add selectedBranch
+    queryKey: ['attendance-history', viewMonth, viewYear, selectedBranch],
     queryFn: () => {
       const params = new URLSearchParams({ month: viewMonth, year: viewYear })
       if (selectedBranch) params.append('branch_id', selectedBranch)
@@ -54,13 +54,17 @@ function AdminAttendance() {
   })
 
   const markBulk = useMutation({
-    mutationFn: () => api.post('/attendance/mark-bulk', {
-      date: selectedDate,
-      records: Object.entries(attendanceMap).map(([student_id, status]) => ({
-        student_id: parseInt(student_id),
-        status
-      }))
-    }),
+    mutationFn: () => {
+      const branchId = selectedBranch || attendanceList?.[0]?.branch_id
+      return api.post('/attendance/mark-bulk', {
+        date: selectedDate,
+        branch_id: branchId,
+        records: Object.entries(attendanceMap).map(([student_id, status]) => ({
+          student_id: parseInt(student_id),
+          status
+        }))
+      })
+    },
     onSuccess: () => {
       showToast('Attendance saved successfully')
       queryClient.invalidateQueries(['branch-attendance'])
@@ -93,7 +97,6 @@ function AdminAttendance() {
       </div>
 
       <BranchSelector selectedBranch={selectedBranch} onChange={setSelectedBranch} />
-
 
       {/* MARK MODE */}
       {mode === 'mark' && (
@@ -168,7 +171,11 @@ function AdminAttendance() {
       {mode === 'view' && (
         <>
           <div className="flex gap-3 items-center mb-6">
-            <select value={viewMonth} onChange={e => setViewMonth(parseInt(e.target.value))} className="border rounded px-3 py-2 text-sm">
+            <select
+              value={viewMonth}
+              onChange={e => setViewMonth(parseInt(e.target.value))}
+              className="border rounded px-3 py-2 text-sm"
+            >
               {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((m, i) => (
                 <option key={i} value={i+1}>{m}</option>
               ))}
@@ -183,11 +190,13 @@ function AdminAttendance() {
 
           {historyLoading ? (
             <p className="text-gray-500">Loading...</p>
+          ) : historyData?.length === 0 ? (
+            <p className="text-gray-500 text-center py-8">No attendance records found</p>
           ) : (
             <div className="space-y-4">
               {historyData?.map(student => (
                 <div key={student.student_id} className="bg-white rounded-lg shadow p-4">
-                  <div className="flex justify-between items-start mb-3">
+                  <div className="flex justify-between items-start mb-3 flex-wrap gap-2">
                     <h3 className="font-semibold">{student.full_name}</h3>
                     <div className="flex gap-4 text-sm">
                       <span className="text-green-700 font-medium">Present: {student.present}</span>
@@ -197,11 +206,17 @@ function AdminAttendance() {
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    {student.records.map(r => (
-                      <div key={r.date} className={`px-2 py-1 rounded text-xs font-medium ${STATUS_STYLES[r.status]}`}>
-                        {new Date(r.date).getDate()} — {r.status.replace('_', ' ')}
-                      </div>
-                    ))}
+                    {student.records?.map(r => {
+                      const statusStr = typeof r.status === 'string' ? r.status : 'not_marked'
+                      return (
+                        <div
+                          key={r.date}
+                          className={`px-2 py-1 rounded text-xs font-medium ${STATUS_STYLES[statusStr] || 'bg-gray-100 text-gray-500'}`}
+                        >
+                          {new Date(r.date + 'T00:00:00').getDate()} — {statusStr.replace('_', ' ')}
+                        </div>
+                      )
+                    })}
                   </div>
                 </div>
               ))}
