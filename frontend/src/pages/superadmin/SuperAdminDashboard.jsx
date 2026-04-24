@@ -13,7 +13,7 @@ function SuperAdminDashboard() {
   const [showRejectInput, setShowRejectInput] = useState({})
   const [showPromotionRequests, setShowPromotionRequests] = useState(false)
   const [showBranchRequests, setShowBranchRequests] = useState(false)
-  const [selectedBranch, setSelectedBranch] = useState(null)
+  // const [selectedBranch, setSelectedBranch] = useState(null)
 
   const { data: promotionRequests } = useQuery({
     queryKey: ['promotion-requests'],
@@ -71,9 +71,9 @@ function SuperAdminDashboard() {
   const totalAdmins = branchesOverview?.reduce((sum, b) => sum + b.admin_count, 0) || 0
   const totalBranches = branchesOverview?.length || 0
 
-  const filteredBranches = selectedBranch
-    ? branchesOverview?.filter(b => b.id === selectedBranch)
-    : branchesOverview
+  // const filteredBranches = selectedBranch
+  //   ? branchesOverview?.filter(b => b.id === selectedBranch)
+  //   : branchesOverview
 
   return (
     <MainLayout>
@@ -228,7 +228,7 @@ function SuperAdminDashboard() {
         <div className="p-4 border-b flex justify-between items-center flex-wrap gap-3">
           <h3 className="font-semibold">Students Per Branch</h3>
           {/* Branch filter buttons */}
-          {branchesOverview?.length > 1 && (
+          {/* {branchesOverview?.length > 1 && (
             <div className="flex gap-2 flex-wrap">
               <button
                 onClick={() => setSelectedBranch(null)}
@@ -255,7 +255,7 @@ function SuperAdminDashboard() {
                 </button>
               ))}
             </div>
-          )}
+          )} */}
         </div>
         <TableWrapper>
           <table className="w-full">
@@ -272,10 +272,10 @@ function SuperAdminDashboard() {
             <tbody>
               {branchesLoading ? (
                 <tr><td colSpan="6" className="text-center py-8 text-gray-500">Loading...</td></tr>
-              ) : filteredBranches?.length === 0 ? (
+              ) : branchesOverview?.length === 0 ? (
                 <tr><td colSpan="6" className="text-center py-8 text-gray-500">No branches found</td></tr>
               ) : (
-                filteredBranches?.map(branch => (
+                branchesOverview?.map(branch => (
                   <tr key={branch.id} className="border-b hover:bg-gray-50">
                     <td className="px-6 py-4 font-medium">{branch.name}</td>
                     <td className="px-6 py-4 text-gray-500">{branch.location}</td>
