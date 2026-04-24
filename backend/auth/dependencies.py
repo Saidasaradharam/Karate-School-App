@@ -41,7 +41,9 @@ def require_student(current_user: User = Depends(get_current_user)) -> User:
 def get_admin_branch_ids(db: Session, user: User) -> list[int]:
     """Returns all branch IDs an admin has access to"""
     if user.role == UserRole.super_admin:
-        return []  # super admin handled separately
+        from models.models import Branch
+        all_branches = db.query(Branch).filter(Branch.is_active == True).all()
+        return [b.id for b in all_branches]
     branches = db.query(AdminBranch).filter(
         AdminBranch.admin_id == user.id
     ).all()
