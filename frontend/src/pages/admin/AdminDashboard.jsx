@@ -147,7 +147,7 @@ function AdminDashboard() {
                 >
                   {b.name}
                   <span className="ml-1.5 text-xs opacity-70">
-                    {students?.filter(s => s.branch_id === b.id).length || 0} students
+                    {students?.filter(s => s.branch_id === b.id || s.user?.branch_id === b.id).length || 0} students
                   </span>
                 </button>
               ))}

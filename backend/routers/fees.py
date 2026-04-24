@@ -69,6 +69,7 @@ def get_branch_overview(
     ).all()
     result = []
     for student in students:
+        student_user = db.query(User).filter(User.id == student.user_id).first()
         record = db.query(FeeRecord).filter(
             FeeRecord.student_id == student.id,
             FeeRecord.month == month,
@@ -82,22 +83,23 @@ def get_branch_overview(
             "status": record.status.value if record else "no_record",
             "amount": record.amount if record else None,
             "payment_type": record.payment_type if record else None,
-            "paid_at": record.paid_at.isoformat() if record and record.paid_at else None
+            "paid_at": record.paid_at.isoformat() if record and record.paid_at else None,
+            "branch_id": student_user.branch_id if student_user else None  # add this
         })
     return result
 
-@router.get("/branch-summary", response_model=FeeSummaryResponse)
+@router.get("/branch-summary")
 def get_branch_summary(db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     from models.models import Branch
     now = datetime.utcnow()
-    branch = db.query(Branch).filter(Branch.id == current_user.branch_id).first()
-    if not branch:
-        raise HTTPException(status_code=404, detail="Branch not found")
+    branch_ids = get_admin_branch_ids(db, current_user)
+
     students = db.query(Student).join(User).filter(
-        User.branch_id == current_user.branch_id,
+        User.branch_id.in_(branch_ids),
         User.role == UserRole.student
     ).all()
     student_ids = [s.id for s in students]
+
     paid = db.query(FeeRecord).filter(
         FeeRecord.student_id.in_(student_ids),
         FeeRecord.status.in_([FeeStatus.paid_online, FeeStatus.paid_offline]),
@@ -117,49 +119,22 @@ def get_branch_summary(db: Session = Depends(get_db), current_user: User = Depen
         FeeRecord.year == now.year
     ).count()
     return {
-        "branch_id": branch.id,
-        "branch_name": branch.name,
+        "branch_id": branch_ids[0] if branch_ids else 0,
+        "branch_name": "All Branches",
         "total_students": len(students),
         "paid_count": paid,
         "pending_count": pending,
         "rejected_count": rejected
     }
 
-@router.get("/summary", response_model=list[FeeSummaryResponse])
-def get_financial_summary(db: Session = Depends(get_db), current_user: User = Depends(require_super_admin)):
-    from models.models import Branch
-    branches = db.query(Branch).filter(Branch.is_active == True).all()
-    result = []
-    for branch in branches:
-        students = db.query(Student).join(User).filter(
-            User.branch_id == branch.id,
-            User.role == UserRole.student  # only students
-        ).all()
-        student_ids = [s.id for s in students]
-        paid = db.query(FeeRecord).filter(
-            FeeRecord.student_id.in_(student_ids),
-            FeeRecord.status.in_([FeeStatus.paid_online, FeeStatus.paid_offline])
-        ).count()
-        pending = db.query(FeeRecord).filter(
-            FeeRecord.student_id.in_(student_ids),
-            FeeRecord.status == FeeStatus.pending
-        ).count()
-        result.append({
-            "branch_id": branch.id,
-            "branch_name": branch.name,
-            "total_students": len(students),
-            "paid_count": paid,
-            "pending_count": pending
-        })
-    return result
-
 @router.post("/manual-entry")
 def add_manual_entry(data: ManualEntryCreate, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     # Verify student belongs to admin's branch
     paid_at = datetime.strptime(data.paid_date, "%Y-%m-%d") if data.paid_date else datetime.utcnow()
+    branch_ids = get_admin_branch_ids(db, current_user)
     student = db.query(Student).join(User).filter(
         Student.id == data.student_id,
-        User.branch_id == current_user.branch_id
+        User.branch_id.in_(branch_ids)
     ).first()
     if not student:
         raise HTTPException(status_code=404, detail="Student not found in your branch")
@@ -196,9 +171,10 @@ def add_manual_entry(data: ManualEntryCreate, db: Session = Depends(get_db), cur
 
 @router.get("/student/{student_id}")
 def get_student_fee_history(student_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
+    branch_ids = get_admin_branch_ids(db, current_user)
     student = db.query(Student).join(User).filter(
         Student.id == student_id,
-        User.branch_id == current_user.branch_id
+        User.branch_id.in_(branch_ids)
     ).first()
     if not student:
         raise HTTPException(status_code=404, detail="Student not found in your branch")

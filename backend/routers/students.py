@@ -98,7 +98,24 @@ def get_students(
         User.branch_id.in_(branch_ids),
         User.role == UserRole.student
     ).all()
-    return students
+
+    result = []
+    for s in students:
+        student_user = db.query(User).filter(User.id == s.user_id).first()
+        result.append({
+            "id": s.id,
+            "full_name": s.full_name,
+            "belt_grade": s.belt_grade,
+            "contact": s.contact,
+            "dob": s.dob,
+            "address": s.address,
+            "parent_name": s.parent_name,
+            "emergency_contact": s.emergency_contact,
+            "last_graduation_date": s.last_graduation_date,
+            "created_at": str(s.created_at),
+            "branch_id": student_user.branch_id if student_user else None
+        })
+    return result
 
 @router.get("/{student_id}")
 def get_student(student_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
