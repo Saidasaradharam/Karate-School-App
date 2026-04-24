@@ -98,7 +98,13 @@ function SuperAdminDashboard() {
       <div className="bg-white rounded-2xl shadow p-6 mb-6">
         <div className="flex justify-between items-center">
           <div>
-            <h3 className="font-bold">⬆️ Promotion Requests</h3>
+            <h3 className="font-bold flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 19V5" />
+                <path d="m5 12 7-7 7 7" />
+              </svg>
+              Promotion Requests
+            </h3>
             <p className="text-sm text-gray-500 mt-0.5">
               {promotionRequests?.length || 0} pending
             </p>
@@ -152,7 +158,13 @@ function SuperAdminDashboard() {
       <div className="bg-white rounded-2xl shadow p-6 mb-6">
         <div className="flex justify-between items-center">
           <div>
-            <h3 className="font-bold">🏢 Branch Requests</h3>
+            <h3 className="font-bold flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                <polyline points="9 22 9 12 15 12 15 22" />
+              </svg>
+              Branch Requests
+            </h3>
             <p className="text-sm text-gray-500 mt-0.5">
               {branchRequests?.length || 0} pending
             </p>
