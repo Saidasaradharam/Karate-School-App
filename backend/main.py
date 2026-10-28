@@ -18,6 +18,10 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from config import settings
 from routers.admins import router as admins_router
+from fastapi.staticfiles import StaticFiles
+import os
+
+os.makedirs("static/photos", exist_ok=True)
 
 origins = settings.allowed_origins.split(",")
 
@@ -35,6 +39,9 @@ app = FastAPI(
     swagger_ui_parameters={"persistAuthorization": True},
     lifespan=lifespan
 )
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
 
 # Rate limiting
 limiter = Limiter(key_func=get_remote_address)

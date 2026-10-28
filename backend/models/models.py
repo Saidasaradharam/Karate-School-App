@@ -1,6 +1,6 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Float, Enum
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Float, Enum, Text
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, timezone
 from database import Base
 import enum
 
@@ -127,6 +127,19 @@ class Photo(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     uploader = relationship("User", foreign_keys=[uploader_id])
+
+
+class PhotoFace(Base):
+    __tablename__ = "photo_faces"
+
+    id = Column(Integer, primary_key=True, index=True)
+    photo_id = Column(Integer, ForeignKey("photos.id", ondelete="CASCADE"), nullable=False)
+    cluster_id = Column(Integer, nullable=True)  # Groups the same face/person together
+    face_encoding = Column(Text, nullable=True)   # Face embedding vector
+    thumbnail_url = Column(String, nullable=True)  # Cropped thumbnail for album view
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    photo = relationship("Photo", backref="faces", cascade="all, delete")
 
 
 class BranchSchedule(Base):
