@@ -129,7 +129,8 @@ function SuperAdminFees() {
                     {students?.find(s => s.id === req.student_id)?.full_name || `Student #${req.student_id}`}
                   </p>
                   <p className="text-sm text-gray-500">
-                    Rs.{req.amount} — {MONTHS[req.month - 1]} {req.year}
+                    Rs.{req.amount} — {MONTHS[req.month - 1]} {req.year} {" — "}
+                    <span className="capitalize">{req.payment_type || 'cash'}</span>
                     {req.paid_date && ` — Paid on ${new Date(req.paid_date).toLocaleDateString()}`}
                   </p>
                 </div>

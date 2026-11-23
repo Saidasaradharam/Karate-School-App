@@ -175,10 +175,30 @@ def create_offline_request(data: OfflineRequestCreate, db: Session = Depends(get
 @router.get("/offline/pending")
 def get_pending_requests(db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     branch_ids = get_admin_branch_ids(db, current_user)
-    return db.query(OfflinePaymentRequest).join(Student).join(User).filter(
-        User.branch_id.in_(branch_ids),
-        OfflinePaymentRequest.status == RequestStatus.pending
+    # return db.query(OfflinePaymentRequest).join(Student).join(User).filter(
+    #     User.branch_id.in_(branch_ids),
+    #     OfflinePaymentRequest.status == RequestStatus.pending
+    # ).all()
+    requests = db.query(OfflinePaymentRequest).join(Student).join(User).filter(
+    User.branch_id.in_(branch_ids),
+    OfflinePaymentRequest.status == RequestStatus.pending
     ).all()
+
+    return [
+        {
+            "id": request.id,
+            "student_id": request.student_id,
+            "student_name": request.student.full_name,
+            "admin_id": request.admin_id,
+            "month": request.month,
+            "year": request.year,
+            "amount": request.amount,
+            "paid_date": request.paid_date,
+            "payment_type": request.payment_type or "cash",
+            "status": request.status.value
+        }
+        for request in requests
+    ]
 
 @router.patch("/offline/{id}/approve")
 def approve_offline_request(id: int, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):

@@ -297,8 +297,12 @@ function AdminDashboard() {
             {pendingRequests.map(req => (
               <div key={req.id} className="px-6 py-4 flex justify-between items-center">
                 <div>
-                  <p className="font-medium">Student ID: {req.student_id}</p>
-                  <p className="text-sm text-gray-500">Rs.{req.amount} — {req.month}/{req.year}</p>
+                  <p className="font-medium"> {req.student_name || students?.find(s => s.id === req.student_id)?.full_name || `Student #${req.student_id}`} </p>
+                  {/* <p className="font-medium">Student ID: {req.student_id}</p> */}
+                  {/* <p className="text-sm text-gray-500">Rs.{req.amount} — {req.month}/{req.year}</p> */}
+                  <p className="text-sm text-gray-500">Rs.{req.amount} — {req.month}/{req.year} {" — "}
+                    <span className="capitalize">{req.payment_type || 'cash'}</span>
+                  </p>
                 </div>
                 <div className="flex gap-2">
                   <button onClick={() => approveRequest.mutate(req.id)} className="bg-green-600 text-white px-3 py-1.5 rounded text-sm hover:bg-green-700">
