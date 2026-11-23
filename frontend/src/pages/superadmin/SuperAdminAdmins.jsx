@@ -230,16 +230,19 @@ const EMPTY_FORM = {
               ).map(s => (
                 <div
                   key={s.id}
-                  onClick={() => setPromoteData(prev => ({ ...prev, user_id: s.user_id }))}
+                  onClick={() => {
+                    if (!s.user_id) return
+                    setPromoteData(prev => ({ ...prev, user_id: s.user_id }))
+                  }}
                   className={`px-4 py-3 cursor-pointer border-b last:border-0 hover:bg-gray-50 flex justify-between items-center ${
-                    promoteData.user_id === s.user_id ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
+                    promoteData.user_id && promoteData.user_id === s.user_id ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
                   }`}
                 >
                   <div>
                     <p className="font-medium text-sm">{s.full_name}</p>
                     <p className="text-xs text-gray-400">{s.belt_grade}</p>
                   </div>
-                  {promoteData.user_id === s.user_id && (
+                  {promoteData.user_id && promoteData.user_id === s.user_id && (
                     <span className="text-blue-600 text-xs font-semibold">Selected</span>
                   )}
                 </div>

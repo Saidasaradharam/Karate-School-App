@@ -104,6 +104,7 @@ def get_students(
         student_user = db.query(User).filter(User.id == s.user_id).first()
         result.append({
             "id": s.id,
+            "user_id": s.user_id,
             "full_name": s.full_name,
             "belt_grade": s.belt_grade,
             "contact": s.contact,
